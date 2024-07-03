@@ -2,8 +2,9 @@ import asyncio
 import subprocess
 from collections import defaultdict
 
+from bluesky.plans import scan
 from bluesky.run_engine import RunEngine
-from ophyd_async.core import DeviceCollector
+from ophyd_async.core import DeviceCollector, assert_emitted
 
 from p99_bluesky.devices.p99.sample_stage import (
     FilterMotor,
@@ -62,25 +63,25 @@ async def test_fake_p99(RE: RunEngine) -> None:
     await asyncio.wait_for(result, timeout=2)
     assert result.result() == [2.0, 3.1, 4.0, p99StageSelections.Cd25um, 0.0]
 
-    # RE(
-    #     scan(
-    #         [mock_sampleAngleStage.theta, det],
-    #         xyz_motor.y,
-    #         -1,
-    #         1,
-    #         xyz_motor.x,
-    #         -2,
-    #         2,
-    #         xyz_motor.z,
-    #         -3,
-    #         3,
-    #         10,
-    #     ),
-    #     [
-    #         capture_emitted,
-    #     ],
-    # )
-    # assert_emitted(docs, start=1, descriptor=1, event=10, stop=1)
+    RE(
+        scan(
+            [mock_sampleAngleStage.theta],
+            xyz_motor.y,
+            -1,
+            1,
+            xyz_motor.x,
+            -2,
+            2,
+            xyz_motor.z,
+            -3,
+            3,
+            10,
+        ),
+        [
+            capture_emitted,
+        ],
+    )
+    assert_emitted(docs, start=1, descriptor=1, event=10, stop=1)
     p.terminate()
     p.wait()
     await asyncio.sleep(A_BIT)
