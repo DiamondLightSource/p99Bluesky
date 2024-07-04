@@ -1,5 +1,6 @@
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
+from blueapi.core import MsgGenerator
 from bluesky.preprocessors import (
     finalize_wrapper,
 )
@@ -7,6 +8,7 @@ from ophyd_async.epics.motion import Motor
 from ophyd_async.protocols import AsyncReadable
 
 from p99_bluesky.log import LOGGER
+from p99_bluesky.plan_stubs.motor_plan import check_within_limit, reset_speed
 
 
 def fast_scan_1d(
@@ -15,7 +17,7 @@ def fast_scan_1d(
     start: float,
     end: float,
     motor_speed: float | None = None,
-):
+) -> MsgGenerator:
     """
     One axis fast scan
 
@@ -57,15 +59,15 @@ def fast_scan_grid(
     step_motor: Motor,
     step_start: float,
     step_end: float,
-    step_size: float,
+    num_step: int,
     scan_motor: Motor,
     scan_start: float,
     scan_end: float,
     motor_speed: float | None = None,
     snake_axes: bool = False,
-):
+) -> MsgGenerator:
     """
-    Same as fast_scan_1d with an extra axis to step through to from a grid
+    Same as fast_scan_1d with an extra axis to step through forming a grid
 
      Parameters
      ----------
@@ -89,7 +91,7 @@ def fast_scan_grid(
         step_motor: Motor,
         step_start: float,
         step_end: float,
-        step_number: float,
+        num_step: int,
         scan_motor: Motor,
         scan_start: float,
         scan_end: float,
@@ -98,27 +100,28 @@ def fast_scan_grid(
     ):
         yield from check_within_limit([step_start, step_end], step_motor)
         yield from check_within_limit([scan_start, scan_end], scan_motor)
-        step_size = (step_end - step_start) / step_number
+        step_size = (step_end - step_start) / num_step
         step_counter = 1
+        current_step = step_start + step_size * step_counter
         if snake_axes:
-            while step_number >= step_counter:
-                yield from bps.mv(step_motor, step_start + step_size * step_counter)
+            while num_step >= step_counter:
+                yield from bps.mv(step_motor, current_step)
                 yield from _fast_scan_1d(
                     dets + [step_motor], scan_motor, scan_start, scan_end, motor_speed
                 )
-                step_counter += 1
-                yield from bps.mv(step_motor, step_start + step_size * step_counter)
+                current_step += step_size
+                yield from bps.mv(step_motor, current_step)
                 yield from _fast_scan_1d(
                     dets + [step_motor], scan_motor, scan_end, scan_start, motor_speed
                 )
-                step_counter += 1
+                current_step += step_size
         else:
-            while step_number >= step_counter:
-                yield from bps.mv(step_motor, step_start + step_size * step_counter)
+            while num_step >= step_counter:
+                yield from bps.mv(step_motor, current_step)
                 yield from _fast_scan_1d(
                     dets + [step_motor], scan_motor, scan_start, scan_end, motor_speed
                 )
-                step_counter += 1
+                current_step += step_size
 
     yield from finalize_wrapper(
         plan=inner_fast_scan_grid(
@@ -126,7 +129,7 @@ def fast_scan_grid(
             step_motor,
             step_start,
             step_end,
-            step_size,
+            num_step,
             scan_motor,
             scan_start,
             scan_end,
@@ -143,7 +146,7 @@ def _fast_scan_1d(
     start: float,
     end: float,
     motor_speed: float | None = None,
-):
+) -> MsgGenerator:
     """
     The logic for one axis fast scan, see fast_scan_1d and fast_scan_grid
 
@@ -206,24 +209,6 @@ def _fast_scan_1d(
         plan=inner_fast_scan_1d(dets, motor, start, end, motor_speed),
         final_plan=reset_speed(old_speed, motor),
     )
-
-
-def check_within_limit(values: list, motor: Motor):
-    LOGGER.info(f"Check {motor.name} limits.")
-    lower_limit = yield from bps.rd(motor.low_limit_travel)
-    high_limit = yield from bps.rd(motor.high_limit_travel)
-    for value in values:
-        if not lower_limit < value < high_limit:
-            raise ValueError(
-                f"{motor.name} move request of {value} is beyond limits:"
-                f"{lower_limit} < {high_limit}"
-            )
-
-
-def reset_speed(old_speed, motor: Motor):
-    LOGGER.info(f"Clean up: setting motor speed to {old_speed}.")
-    if old_speed:
-        yield from bps.abs_set(motor.velocity, old_speed)
 
 
 def clean_up():

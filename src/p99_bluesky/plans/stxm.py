@@ -1,7 +1,9 @@
+import math
 from collections.abc import Iterator
 from typing import Any
 
 import bluesky.plan_stubs as bps
+from blueapi.core import MsgGenerator
 from ophyd_async.epics.motion import Motor
 
 from p99_bluesky.devices.andor2Ad import Andor2Ad, Andor3Ad
@@ -39,22 +41,23 @@ def stxm_fast(
     scan_end: float,
     plan_time: float,
     # step_size: float,
-):
+) -> MsgGenerator:
     num_data_point = plan_time / count_time
     scan_range = abs(scan_start - scan_end)
     step_range = abs(step_start - step_end)
+    # Assuming ideal step size is evenly distributed points within the two axis.
     ideal_step_size = 1.0 / ((num_data_point / (scan_range * step_range)) ** 0.5)
     ideal_velocity = ideal_step_size / count_time
+
     LOGGER.info(f"{ideal_step_size} velocity = {ideal_velocity}.")
     velocity, step_size = yield from get_velocity_and_step_size(
         scan_motor, ideal_velocity, ideal_step_size
     )
     LOGGER.info(f"{scan_motor.name} velocity = {velocity}.")
     LOGGER.info(f"{step_motor.name} step size = {step_size}.")
-    # yield from bps.abs_set(det.drv.acquire_time, count_time)
-    import math
-
+    # yield from bps.abs_set(det.drv.acquire_time, count_time
     num_of_step = math.ceil(step_range / step_size)
+
     yield from fast_scan_grid(
         [det],
         step_motor,
@@ -86,19 +89,3 @@ def get_velocity_and_step_size(
     else:
         step_size = ideal_step_size
     return ideal_velocity, step_size
-
-
-# from ophyd.sim import det
-
-# fast_scan_grid(
-#     dets: list[AsyncReadable],
-#     step_motor: Motor,
-#     step_start: float,
-#     step_end: float,
-#     step_size: float,
-#     scan_motor: Motor,
-#     scan_start: float,
-#     scan_end: float,
-#     motor_speed: float | None = None,
-#     snake_axes: bool = False,
-# ):
