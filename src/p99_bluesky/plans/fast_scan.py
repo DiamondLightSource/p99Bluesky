@@ -8,7 +8,7 @@ from ophyd_async.epics.motion import Motor
 from ophyd_async.protocols import AsyncReadable
 
 from p99_bluesky.log import LOGGER
-from p99_bluesky.plan_stubs.motor_plan import check_within_limit, reset_speed
+from p99_bluesky.plan_stubs.motor_plan import check_within_limit
 
 
 def fast_scan_1d(
@@ -203,12 +203,18 @@ def _fast_scan_1d(
         while not done:
             yield from bps.trigger_and_read(dets + [motor])
             done = yield from bps.rd(motor.motor_done_move)
-        yield from bps.checkpoint()
+            yield from bps.checkpoint()
 
     yield from finalize_wrapper(
         plan=inner_fast_scan_1d(dets, motor, start, end, motor_speed),
         final_plan=reset_speed(old_speed, motor),
     )
+
+
+def reset_speed(old_speed, motor: Motor):
+    LOGGER.info(f"Clean up: setting motor speed to {old_speed}.")
+    if old_speed:
+        yield from bps.abs_set(motor.velocity, old_speed)
 
 
 def clean_up():

@@ -14,9 +14,3 @@ def check_within_limit(values: list, motor: Motor):
                 f"{motor.name} move request of {value} is beyond limits:"
                 f"{lower_limit} < {high_limit}"
             )
-
-
-def reset_speed(old_speed, motor: Motor):
-    LOGGER.info(f"Clean up: setting motor speed to {old_speed}.")
-    if old_speed:
-        yield from bps.abs_set(motor.velocity, old_speed)

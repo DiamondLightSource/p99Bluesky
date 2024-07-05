@@ -79,13 +79,11 @@ def get_velocity_and_step_size(
     min_velocity = 0.01  # yield from bps.rd(scan_motor.min_velocity)
     # if motor does not move fast enough increase step_motor step size
     if ideal_velocity > max_velocity:
-        step_size = int(ideal_velocity / max_velocity * ideal_step_size)
+        ideal_step_size = ideal_velocity / max_velocity * ideal_step_size
         ideal_velocity = max_velocity
     # if motor does not move slow enough decrease step_motor step size
     # min_velocity not in motor atm need to add it
     elif ideal_velocity < min_velocity:
-        step_size = int(ideal_velocity / min_velocity * ideal_step_size)
+        ideal_step_size = ideal_velocity / min_velocity * ideal_step_size
         ideal_velocity = min_velocity
-    else:
-        step_size = ideal_step_size
-    return ideal_velocity, step_size
+    return ideal_velocity, ideal_step_size
