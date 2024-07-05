@@ -53,7 +53,7 @@ async def soft_motor(prefix: str, name: str, unit: str = "mm"):
     )
     vel = builder.aOut(
         name + "VELO",
-        initial_value=1.5,
+        initial_value=1000,
     )
     dmov = builder.boolOut(
         name + "DMOV",

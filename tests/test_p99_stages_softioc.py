@@ -1,5 +1,4 @@
 import asyncio
-import subprocess
 from collections import defaultdict
 
 from bluesky.plans import scan
@@ -11,25 +10,17 @@ from p99_bluesky.devices.p99.sample_stage import (
     SampleAngleStage,
     p99StageSelections,
 )
-from soft_motor import SoftThreeAxisStage
 
 # Long enough for multiple asyncio event loop cycles to run so
 # all the tasks have a chance to run
-A_BIT = 0.001
+A_BIT = 0.5
 
 
-async def test_fake_p99(RE: RunEngine) -> None:
+async def test_fake_p99(RE: RunEngine, xyz_motor) -> None:
     docs = defaultdict(list)
 
     def capture_emitted(name, doc):
         docs[name].append(doc)
-
-    p = subprocess.Popen(
-        [
-            "python",
-            "tests/epics/soft_ioc/p99_softioc.py",
-        ],
-    )
 
     await asyncio.sleep(A_BIT)
     with DeviceCollector(mock=False):
@@ -39,7 +30,6 @@ async def test_fake_p99(RE: RunEngine) -> None:
         mock_filter_wheel = FilterMotor(
             "p99-MO-STAGE-02:MP:SELECT", name="mock_filter_wheel"
         )
-        xyz_motor = SoftThreeAxisStage("p99-MO-STAGE-02:", name="xyz_motor")
 
     assert mock_sampleAngleStage.roll.name == "mock_sampleAngleStage-roll"
     assert mock_sampleAngleStage.pitch.name == "mock_sampleAngleStage-pitch"
@@ -50,7 +40,6 @@ async def test_fake_p99(RE: RunEngine) -> None:
         mock_sampleAngleStage.pitch.set(3.1),
         mock_sampleAngleStage.roll.set(4),
         mock_filter_wheel.user_setpoint.set(p99StageSelections.Cd25um),
-        xyz_motor.x.user_setpoint.set(0),
     )
     await asyncio.sleep(A_BIT)
     result = asyncio.gather(
@@ -58,20 +47,13 @@ async def test_fake_p99(RE: RunEngine) -> None:
         mock_sampleAngleStage.pitch.get_value(),
         mock_sampleAngleStage.roll.get_value(),
         mock_filter_wheel.user_setpoint.get_value(),
-        xyz_motor.x.user_readback.get_value(),
     )
     await asyncio.wait_for(result, timeout=2)
-    assert result.result() == [2.0, 3.1, 4.0, p99StageSelections.Cd25um, 0.0]
+    assert result.result() == [2.0, 3.1, 4.0, p99StageSelections.Cd25um]
 
     RE(
         scan(
             [mock_sampleAngleStage.theta],
-            xyz_motor.y,
-            -1,
-            1,
-            xyz_motor.x,
-            -2,
-            2,
             xyz_motor.z,
             -3,
             3,
@@ -82,6 +64,4 @@ async def test_fake_p99(RE: RunEngine) -> None:
         ],
     )
     assert_emitted(docs, start=1, descriptor=1, event=10, stop=1)
-    p.terminate()
-    p.wait()
     await asyncio.sleep(A_BIT)

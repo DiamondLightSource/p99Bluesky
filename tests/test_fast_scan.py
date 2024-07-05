@@ -7,13 +7,11 @@ from ophyd_async.core import (
     DeviceCollector,
     set_mock_value,
 )
-from ophyd_async.core.mock_signal_utils import (
-    get_mock_put,
-)
+from ophyd_async.core.mock_signal_utils import get_mock_put
 
 from p99_bluesky.devices.andor2Ad import Andor2Ad, StaticDirectoryProviderPlus
 from p99_bluesky.devices.stages import ThreeAxisStage
-from p99_bluesky.plans.fast_scan import fast_scan_1d
+from p99_bluesky.plans.fast_scan import fast_scan_1d, fast_scan_grid
 
 # Long enough for multiple asyncio event loop cycles to run so
 # all the tasks have a chance to run
@@ -90,11 +88,16 @@ async def test_fast_scan_1d_success(
     assert 2 == get_mock_put(sim_motor.x.velocity).call_count
 
 
-# async def test_fast_scan_grid_success(
-#     sim_motor: ThreeAxisStage, RE: RunEngine, andor2: Andor2Ad
-# ):
-#     RE(fast_scan_grid([det], sim_motor.x, 5, -1, 10, sim_motor.y, 5, -1, 10))
+async def test_fast_scan_2d_success(
+    sim_motor: ThreeAxisStage, RE: RunEngine, andor2: Andor2Ad
+):
+    det = SynPeriodicSignal(name="rand", labels={"detectors"})
+    step = 5
+    RE(fast_scan_grid([det], sim_motor.x, 0, 2, step, sim_motor.y, -0, -5, 1))
 
-#     assert 2.78 == await sim_motor.y.velocity.get_value()
-#     assert 20 == get_mock_put(sim_motor.y.user_setpoint).call_count
-#     assert 20 == get_mock_put(sim_motor.y.velocity).call_count
+    assert 2.78 == await sim_motor.x.velocity.get_value()
+    assert step == get_mock_put(sim_motor.x.user_setpoint).call_count
+    assert 0 == get_mock_put(sim_motor.x.velocity).call_count
+    assert 2.88 == await sim_motor.y.velocity.get_value()
+    assert step * 2 == get_mock_put(sim_motor.y.user_setpoint).call_count
+    assert step * 2 == get_mock_put(sim_motor.y.velocity).call_count

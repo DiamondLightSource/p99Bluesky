@@ -1,3 +1,5 @@
+from typing import Any
+
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from blueapi.core import MsgGenerator
@@ -5,14 +7,13 @@ from bluesky.preprocessors import (
     finalize_wrapper,
 )
 from ophyd_async.epics.motion import Motor
-from ophyd_async.protocols import AsyncReadable
 
 from p99_bluesky.log import LOGGER
 from p99_bluesky.plan_stubs.motor_plan import check_within_limit
 
 
 def fast_scan_1d(
-    dets: list[AsyncReadable],
+    dets: list[Any],
     motor: Motor,
     start: float,
     end: float,
@@ -39,7 +40,7 @@ def fast_scan_1d(
     @bpp.stage_decorator(dets)
     @bpp.run_decorator()
     def inner_fast_scan_1d(
-        dets: list[AsyncReadable],
+        dets: list[Any],
         motor: Motor,
         start: float,
         end: float,
@@ -55,7 +56,7 @@ def fast_scan_1d(
 
 
 def fast_scan_grid(
-    dets: list[AsyncReadable],
+    dets: list[Any],
     step_motor: Motor,
     step_start: float,
     step_end: float,
@@ -87,7 +88,7 @@ def fast_scan_grid(
     @bpp.stage_decorator(dets)
     @bpp.run_decorator()
     def inner_fast_scan_grid(
-        dets: list[AsyncReadable],
+        dets: list[Any],
         step_motor: Motor,
         step_start: float,
         step_end: float,
@@ -109,19 +110,22 @@ def fast_scan_grid(
                 yield from _fast_scan_1d(
                     dets + [step_motor], scan_motor, scan_start, scan_end, motor_speed
                 )
-                current_step += step_size
+                step_counter += 1
+                current_step = step_start + step_size * step_counter
                 yield from bps.mv(step_motor, current_step)
                 yield from _fast_scan_1d(
                     dets + [step_motor], scan_motor, scan_end, scan_start, motor_speed
                 )
-                current_step += step_size
+                step_counter += 1
+                current_step = step_start + step_size * step_counter
         else:
             while num_step >= step_counter:
                 yield from bps.mv(step_motor, current_step)
                 yield from _fast_scan_1d(
                     dets + [step_motor], scan_motor, scan_start, scan_end, motor_speed
                 )
-                current_step += step_size
+                step_counter += 1
+                current_step = step_start + step_size * step_counter
 
     yield from finalize_wrapper(
         plan=inner_fast_scan_grid(
@@ -141,7 +145,7 @@ def fast_scan_grid(
 
 
 def _fast_scan_1d(
-    dets: list[AsyncReadable],
+    dets: list[Any],
     motor: Motor,
     start: float,
     end: float,
@@ -182,7 +186,7 @@ def _fast_scan_1d(
     old_speed = yield from bps.rd(motor.velocity)
 
     def inner_fast_scan_1d(
-        dets: list[AsyncReadable],
+        dets: list[Any],
         motor: Motor,
         start: float,
         end: float,
