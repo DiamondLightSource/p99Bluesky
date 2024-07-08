@@ -6,6 +6,7 @@ from blueapi.core import MsgGenerator
 from bluesky.preprocessors import (
     finalize_wrapper,
 )
+from numpy import linspace
 from ophyd_async.epics.motion import Motor
 
 from p99_bluesky.log import LOGGER
@@ -101,31 +102,24 @@ def fast_scan_grid(
     ):
         yield from check_within_limit([step_start, step_end], step_motor)
         yield from check_within_limit([scan_start, scan_end], scan_motor)
-        step_size = (step_end - step_start) / num_step
-        step_counter = 1
-        current_step = step_start + step_size * step_counter
+        steps = linspace(step_start, step_end, num_step, endpoint=True)
         if snake_axes:
-            while num_step >= step_counter:
-                yield from bps.mv(step_motor, current_step)
-                yield from _fast_scan_1d(
-                    dets + [step_motor], scan_motor, scan_start, scan_end, motor_speed
-                )
-                step_counter += 1
-                current_step = step_start + step_size * step_counter
-                yield from bps.mv(step_motor, current_step)
-                yield from _fast_scan_1d(
-                    dets + [step_motor], scan_motor, scan_end, scan_start, motor_speed
-                )
-                step_counter += 1
-                current_step = step_start + step_size * step_counter
+            for cnt, step in enumerate(steps):
+                yield from bps.mv(step_motor, step)
+                if cnt % 2 == 0:
+                    yield from _fast_scan_1d(
+                        dets + [step_motor], scan_motor, scan_start, scan_end, motor_speed
+                    )
+                else:
+                    yield from _fast_scan_1d(
+                        dets + [step_motor], scan_motor, scan_end, scan_start, motor_speed
+                    )
         else:
-            while num_step >= step_counter:
-                yield from bps.mv(step_motor, current_step)
+            for step in steps:
+                yield from bps.mv(step_motor, step)
                 yield from _fast_scan_1d(
                     dets + [step_motor], scan_motor, scan_start, scan_end, motor_speed
                 )
-                step_counter += 1
-                current_step = step_start + step_size * step_counter
 
     yield from finalize_wrapper(
         plan=inner_fast_scan_grid(

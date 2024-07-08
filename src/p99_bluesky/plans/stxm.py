@@ -1,5 +1,5 @@
-import math
 from collections.abc import Iterator
+from math import ceil
 from typing import Any
 
 import bluesky.plan_stubs as bps
@@ -9,25 +9,6 @@ from ophyd_async.epics.motion import Motor
 from p99_bluesky.devices.andor2Ad import Andor2Ad, Andor3Ad
 from p99_bluesky.log import LOGGER
 from p99_bluesky.plans.fast_scan import fast_scan_grid
-
-"""
-set parameter for fast_scan_grid
-
-from detector count time calculate roughly how many data point can be done
-if no step size for slow axis
-    assuming even distribution of points between two axis and work out the
-      step for step motor
-from the fast scan speed calculate the motor speed needed to achieve those
- point density.
-if it is below the min speed, use min speed and place a warning:
-    recalculate the step size to fit within time flame and use min speed
-    warning
-if it is above the max speed, use max
-    increase step size so it finishes on time.
-    warning that it will finish early
-
-
-"""
 
 
 def stxm_fast(
@@ -40,23 +21,39 @@ def stxm_fast(
     scan_start: float,
     scan_end: float,
     plan_time: float,
-    # step_size: float,
+    step_size: float | None = None,
 ) -> MsgGenerator:
-    num_data_point = plan_time / count_time
+    """
+    Software triggering stxm scan:
+    Using detector count time to calculate roughly how many data point can be done
+    If no step size is provided use evenly distributed of points if possible,
+    the speed of the scanning motor is calculated using the point density.
+    If scan motor speed is above its max speed,max speed is used and
+     the step size is adjusted so it finishes roughly on time.
+    """
+
     scan_range = abs(scan_start - scan_end)
     step_range = abs(step_start - step_end)
+    step_motor_speed = yield from bps.rd(step_motor.velocity)
+
+    # get number of data point possible after adjusting plan_time for step movement speed
+    num_data_point = (plan_time - step_motor_speed * step_range) / count_time
+
     # Assuming ideal step size is evenly distributed points within the two axis.
-    ideal_step_size = 1.0 / ((num_data_point / (scan_range * step_range)) ** 0.5)
+    if step_size is not None:
+        ideal_step_size = step_size
+    else:
+        ideal_step_size = 1.0 / ((num_data_point / (scan_range * step_range)) ** 0.5)
     ideal_velocity = ideal_step_size / count_time
 
-    LOGGER.info(f"{ideal_step_size} velocity = {ideal_velocity}.")
-    velocity, step_size = yield from get_velocity_and_step_size(
+    LOGGER.info(f"ideal step size = {ideal_step_size} velocity = {ideal_velocity}.")
+    velocity, ideal_step_size = yield from get_velocity_and_step_size(
         scan_motor, ideal_velocity, ideal_step_size
     )
     LOGGER.info(f"{scan_motor.name} velocity = {velocity}.")
     LOGGER.info(f"{step_motor.name} step size = {step_size}.")
     # yield from bps.abs_set(det.drv.acquire_time, count_time
-    num_of_step = math.ceil(step_range / step_size)
+    num_of_step = ceil(step_range / ideal_step_size)
 
     yield from fast_scan_grid(
         [det],
@@ -75,15 +72,13 @@ def stxm_fast(
 def get_velocity_and_step_size(
     scan_motor: Motor, ideal_velocity: float, ideal_step_size
 ) -> Iterator[Any]:
+    print(ideal_velocity)
+    if ideal_velocity <= 0.1:
+        raise ValueError(f"{scan_motor.name} speed: {ideal_velocity} <= 0")
     max_velocity = yield from bps.rd(scan_motor.max_velocity)
-    min_velocity = 0.01  # yield from bps.rd(scan_motor.min_velocity)
     # if motor does not move fast enough increase step_motor step size
     if ideal_velocity > max_velocity:
         ideal_step_size = ideal_velocity / max_velocity * ideal_step_size
         ideal_velocity = max_velocity
-    # if motor does not move slow enough decrease step_motor step size
-    # min_velocity not in motor atm need to add it
-    elif ideal_velocity < min_velocity:
-        ideal_step_size = ideal_velocity / min_velocity * ideal_step_size
-        ideal_velocity = min_velocity
+
     return ideal_velocity, ideal_step_size
