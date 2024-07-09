@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
+from bluesky.run_engine import RunEngine
 from ophyd_async.core import (
     DeviceCollector,
     assert_emitted,
@@ -41,34 +42,30 @@ async def sim_motor():
     yield sim_motor
 
 
-CURRENT_DIRECTORY = Path(__file__).parent
-
-
-async def make_andor2(prefix: str = "") -> Andor2Ad:
-    dp = StaticDirectoryProviderPlus(CURRENT_DIRECTORY, "test-")
-
+async def make_andor2(tmp_p: Path, prefix: str = "") -> Andor2Ad:
+    dp = StaticDirectoryProviderPlus(tmp_p, "test-")
     async with DeviceCollector(mock=True):
         detector = Andor2Ad(prefix, dp, "andor2")
     return detector
 
 
 @pytest.fixture
-async def andor2() -> Andor2Ad:
-    andor2 = await make_andor2(prefix="TEST")
+async def andor2(tmp_path) -> Andor2Ad:
+    andor2 = await make_andor2(tmp_path, prefix="TEST")
 
     set_mock_value(andor2._controller.driver.array_size_x, 10)
     set_mock_value(andor2._controller.driver.array_size_y, 20)
     set_mock_value(andor2.hdf.file_path_exists, True)
     set_mock_value(andor2.hdf.num_captured, 0)
-    set_mock_value(andor2.hdf.file_path, str(CURRENT_DIRECTORY))
-    set_mock_value(
-        andor2.hdf.full_file_name, str(CURRENT_DIRECTORY) + "/test-andor2-hdf0"
-    )
+    set_mock_value(andor2.hdf.file_path, str(tmp_path))
+    set_mock_value(andor2.hdf.full_file_name, str(tmp_path) + "/test-andor2-hdf0")
     set_mock_value(andor2.drv.detector_state, DetectorState.Idle)
     return andor2
 
 
-async def test_stxm_fast_zero_velocity_fail(andor2, sim_motor, RE):
+async def test_stxm_fast_zero_velocity_fail(
+    andor2: Andor2Ad, sim_motor: ThreeAxisStage, RE: RunEngine
+):
     plan_time = 30
     count_time = 0.2
     step_size = 0.0
@@ -99,7 +96,8 @@ async def test_stxm_fast_zero_velocity_fail(andor2, sim_motor, RE):
     assert_emitted(docs)
 
 
-async def test_stxm_fast(andor2, sim_motor, RE):
+async def test_stxm_fast(andor2: Andor2Ad, sim_motor: ThreeAxisStage, RE: RunEngine):
+    plan_time = 30
     rbv_mocks = Mock()
     rbv_mocks.get.side_effect = range(0, 100)
     callback_on_mock_put(
@@ -176,7 +174,7 @@ async def test_stxm_fast_unknown_step(andor2, sim_motor, RE):
 
     scan_start = 0
     scan_end = 2
-    # make the scan motor slow so it can only do 2 steps
+    # make the scan motor slow so it can only do 5 steps
     # ideal step-size is 0.2 with speed =2 for 10x10
     set_mock_value(sim_motor.y.max_velocity, 1)
 

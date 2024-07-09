@@ -21,12 +21,12 @@ def fast_scan_1d(
     motor_speed: float | None = None,
 ) -> MsgGenerator:
     """
-    One axis fast scan
+    One axis fast scan, using _fast_scan_1d.
 
     Parameters
     ----------
     detectors : list
-        list of 'readable' objects
+        list of 'readable',triggerable  objects
     motor : Motor (moveable, readable)
 
     start: float
@@ -69,7 +69,7 @@ def fast_scan_grid(
     snake_axes: bool = False,
 ) -> MsgGenerator:
     """
-    Same as fast_scan_1d with an extra axis to step through forming a grid
+    Same as fast_scan_1d with an extra axis to step through forming a grid.
 
      Parameters
      ----------
@@ -146,7 +146,7 @@ def _fast_scan_1d(
     motor_speed: float | None = None,
 ) -> MsgGenerator:
     """
-    The logic for one axis fast scan, see fast_scan_1d and fast_scan_grid
+    The logic for one axis fast scan, used in fast_scan_1d and fast_scan_grid
 
     In this scan:
     1) The motor moves to the starting point.
@@ -159,7 +159,7 @@ def _fast_scan_1d(
     Note: This is purely software triggering which result in variable accuracy.
     However, fast scan does not require encoder and hardware setup and should
     work for all motor. It is most frequently use for alignment and
-      slow motion measurements.
+    slow motion measurements.
 
     Parameters
     ----------

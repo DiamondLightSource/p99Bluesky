@@ -61,6 +61,7 @@ async def test_fast_scan_1d_fail_limit_check(
         RE(fast_scan_1d([det], sim_motor.x, -208, 0, 10), capture_emitted)
 
     assert 0 == get_mock_put(sim_motor.x.user_setpoint).call_count
+    assert 0 == get_mock_put(sim_motor.x.velocity).call_count
     assert_emitted(docs, start=2, stop=2)
 
 
@@ -75,6 +76,12 @@ async def test_fast_scan_1d_success(sim_motor: ThreeAxisStage, RE: RunEngine, de
     assert 2.78 == await sim_motor.x.velocity.get_value()
     assert 2 == get_mock_put(sim_motor.x.user_setpoint).call_count
     assert 2 == get_mock_put(sim_motor.x.velocity).call_count
+    # check speed is set and reset
+    assert [
+        mock.call(10, wait=True, timeout=mock.ANY),
+        mock.call(2.78, wait=True, timeout=mock.ANY),
+    ] == get_mock_put(sim_motor.x.velocity).call_args_list
+
     """Only 1 event as sim motor motor_done_move is set to true,
       so only 1 loop is ran"""
     assert_emitted(docs, start=1, descriptor=1, event=1, stop=1)
@@ -112,6 +119,7 @@ async def test_fast_scan_2d_success(sim_motor: ThreeAxisStage, RE: RunEngine, de
     assert 2.78 == await sim_motor.x.velocity.get_value()
     assert num_step == get_mock_put(sim_motor.x.user_setpoint).call_count
     assert 0 == get_mock_put(sim_motor.x.velocity).call_count
+    # check step set points
     steps = linspace(x_start, x_end, num_step, endpoint=True)
     for cnt, motor_x in enumerate(get_mock_put(sim_motor.x.user_setpoint).call_args_list):
         assert motor_x == mock.call(steps[cnt], wait=True, timeout=mock.ANY)
@@ -119,6 +127,7 @@ async def test_fast_scan_2d_success(sim_motor: ThreeAxisStage, RE: RunEngine, de
     assert 2.88 == await sim_motor.y.velocity.get_value()
     assert num_step * 2 == get_mock_put(sim_motor.y.velocity).call_count
     assert num_step * 2 == get_mock_put(sim_motor.y.user_setpoint).call_count
+    # check scan axis set and end point
     for cnt, motor_y in enumerate(get_mock_put(sim_motor.y.user_setpoint).call_args_list):
         if cnt % 2 == 0:
             assert motor_y == mock.call(y_start, wait=True, timeout=mock.ANY)
@@ -168,7 +177,7 @@ async def test_fast_scan_2d_Snake_success(sim_motor: ThreeAxisStage, RE: RunEngi
     assert 2.88 == await sim_motor.y.velocity.get_value()
     assert num_step * 2 == get_mock_put(sim_motor.y.velocity).call_count
     assert num_step * 2 == get_mock_put(sim_motor.y.user_setpoint).call_count
-    """ build a list of expected y_position"""
+    """ build a list of expected scan motor position"""
     y_position = [y_start]
     for cnt in range(0, num_step):
         if cnt % 2 == 0:
