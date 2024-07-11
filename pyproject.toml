@@ -51,6 +51,7 @@ dev = [
     "tox-direct",
     "types-mock",
     "pytest-asyncio",
+    "super_state_machine",
     #===========================
     "h5py",
     "ipython",
