@@ -248,11 +248,7 @@ def clean_up():
 
 
 """
- Future: replace _fast_scan_1d with below to take advantage of ophyd aysnc motor,
-  I am not 100% sure but I think there is a bug with the motor's set,it never entre
-    the watch loop as move_status goes true almost immediately:move_status =
-      self.user_setpoint.set(   new_position, wait=True, timeout=timeout)async
-        for current_position in observe_value(self.user_readback, done_status=move_status)
+ Future: replace _fast_scan_1d with below to take advantage of ophyd aysnc motor.
 """
 # def _fly_scan_1d(
 #     dets: list[Any],
