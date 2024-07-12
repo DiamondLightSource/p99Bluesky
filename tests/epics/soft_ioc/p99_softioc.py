@@ -13,10 +13,10 @@ async def p99_fake() -> None:
 
         elif diff < 0:
             dmov.set(False)
-            signal.set(signal.get() + vel.get() * 0.02)
+            signal.set(signal.get() + vel.get() * 0.01)
         elif diff > 0:
             dmov.set(False)
-            signal.set(signal.get() - vel.get() * 0.02)
+            signal.set(signal.get() - vel.get() * 0.01)
 
     # Sample AngleStage softioc
     dispatcher = asyncio_dispatcher.AsyncioDispatcher()

@@ -6,11 +6,38 @@ from blueapi.core import MsgGenerator
 from bluesky.preprocessors import (
     finalize_wrapper,
 )
+from bluesky.utils import short_uid
 from numpy import linspace
+from ophyd_async.core.utils import (
+    CalculatableTimeout,
+    CalculateTimeout,
+)
 from ophyd_async.epics.motion import Motor
+from pydantic import BaseModel, Field
 
 from p99_bluesky.log import LOGGER
 from p99_bluesky.plan_stubs.motor_plan import check_within_limit
+
+
+# Remove once ophyd release
+class FlyMotorInfo(BaseModel):
+    """Minimal set of information required to fly a motor:"""
+
+    #: Absolute position of the motor once it finishes accelerating to desired
+    #: velocity, in motor EGUs
+    start_position: float = Field(frozen=True)
+
+    #: Absolute position of the motor once it begins decelerating from desired
+    #: velocity, in EGUs
+    end_position: float = Field(frozen=True)
+
+    #: Time taken for the motor to get from start_position to end_position, excluding
+    #: run-up and run-down, in seconds.
+    time_for_move: float = Field(frozen=True, gt=0)
+
+    #: Maximum time for the complete motor move, including run up and run down.
+    #: Defaults to `time_for_move` + run up and run down times + 10s.
+    timeout: CalculatableTimeout = Field(frozen=True, default=CalculateTimeout)
 
 
 def fast_scan_1d(
@@ -219,3 +246,51 @@ def clean_up():
     LOGGER.info("Clean up")
     # possibly use to move back to starting position.
     yield from bps.null()
+
+
+def _fly_scan_1d(
+    dets: list[Any],
+    motor: Motor,
+    start: float,
+    end: float,
+    motor_speed: float | None = None,
+) -> MsgGenerator:
+    # read the current speed and store it
+    old_speed = yield from bps.rd(motor.velocity)
+
+    def inner_fast_scan_1d(
+        dets: list[Any],
+        motor: Motor,
+        start: float,
+        end: float,
+        motor_speed: float | None = None,
+    ):
+        LOGGER.info(f"Moving {motor.name} to start position = {start}.")
+        yield from bps.mv(motor, start)  # move to start
+
+        if motor_speed:
+            LOGGER.info(f"Set {motor.name} speed = {motor_speed}.")
+            yield from bps.abs_set(motor.velocity, motor_speed)
+        else:
+            motor_speed = yield from bps.rd(motor.velocity)
+
+        LOGGER.info(f"Set {motor.name} to end position({end}) and begin scan.")
+        grp = short_uid("prepare")
+        fly_info = FlyMotorInfo(
+            start_position=start,
+            end_position=end,
+            time_for_move=abs(start - end) / motor_speed,
+        )
+        yield from bps.prepare(motor, fly_info, group=grp, wait=True)
+        yield from bps.kickoff(motor, group=grp, wait=True)
+
+        done = yield from bps.complete(motor)
+        LOGGER.info(f"flying motor =  {motor.name} at speed =({motor_speed})")
+        while not done.done:
+            yield from bps.trigger_and_read(dets + [motor])
+            yield from bps.checkpoint()
+
+    yield from finalize_wrapper(
+        plan=inner_fast_scan_1d(dets, motor, start, end, motor_speed),
+        final_plan=reset_speed(old_speed, motor),
+    )

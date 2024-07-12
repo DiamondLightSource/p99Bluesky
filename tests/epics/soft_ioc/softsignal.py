@@ -72,7 +72,7 @@ async def soft_motor(prefix: str, name: str, unit: str = "mm"):
     )
     builder.aOut(
         name + "ACCL",
-        initial_value=1,
+        initial_value=0.01,
     )
     builder.aOut(
         name + "RDBD",
