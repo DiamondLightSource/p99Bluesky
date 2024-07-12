@@ -6,7 +6,6 @@ from blueapi.core import MsgGenerator
 from bluesky.preprocessors import (
     finalize_wrapper,
 )
-from bluesky.utils import short_uid
 from numpy import linspace
 from ophyd_async.core.utils import (
     CalculatableTimeout,
@@ -248,49 +247,56 @@ def clean_up():
     yield from bps.null()
 
 
-def _fly_scan_1d(
-    dets: list[Any],
-    motor: Motor,
-    start: float,
-    end: float,
-    motor_speed: float | None = None,
-) -> MsgGenerator:
-    # read the current speed and store it
-    old_speed = yield from bps.rd(motor.velocity)
+"""
+ Future: replace _fast_scan_1d with below to take advantage of ophyd aysnc motor,
+  I am not 100% sure but I think there is a bug with the motor's set,it never entre
+    the watch loop as move_status goes true almost immediately:move_status =
+      self.user_setpoint.set(   new_position, wait=True, timeout=timeout)async
+        for current_position in observe_value(self.user_readback, done_status=move_status)
+"""
+# def _fly_scan_1d(
+#     dets: list[Any],
+#     motor: Motor,
+#     start: float,
+#     end: float,
+#     motor_speed: float | None = None,
+# ) -> MsgGenerator:
+#     # read the current speed and store it
+#     old_speed = yield from bps.rd(motor.velocity)
 
-    def inner_fast_scan_1d(
-        dets: list[Any],
-        motor: Motor,
-        start: float,
-        end: float,
-        motor_speed: float | None = None,
-    ):
-        LOGGER.info(f"Moving {motor.name} to start position = {start}.")
-        yield from bps.mv(motor, start)  # move to start
+#     def inner_fast_scan_1d(
+#         dets: list[Any],
+#         motor: Motor,
+#         start: float,
+#         end: float,
+#         motor_speed: float | None = None,
+#     ):
+#         LOGGER.info(f"Moving {motor.name} to start position = {start}.")
+#         yield from bps.mv(motor, start)  # move to start
 
-        if motor_speed:
-            LOGGER.info(f"Set {motor.name} speed = {motor_speed}.")
-            yield from bps.abs_set(motor.velocity, motor_speed)
-        else:
-            motor_speed = yield from bps.rd(motor.velocity)
+#         if motor_speed:
+#             LOGGER.info(f"Set {motor.name} speed = {motor_speed}.")
+#             yield from bps.abs_set(motor.velocity, motor_speed)
+#         else:
+#             motor_speed = yield from bps.rd(motor.velocity)
 
-        LOGGER.info(f"Set {motor.name} to end position({end}) and begin scan.")
-        grp = short_uid("prepare")
-        fly_info = FlyMotorInfo(
-            start_position=start,
-            end_position=end,
-            time_for_move=abs(start - end) / motor_speed,
-        )
-        yield from bps.prepare(motor, fly_info, group=grp, wait=True)
-        yield from bps.kickoff(motor, group=grp, wait=True)
+#         LOGGER.info(f"Set {motor.name} to end position({end}) and begin scan.")
+#         grp = short_uid("prepare")
+#         fly_info = FlyMotorInfo(
+#             start_position=start,
+#             end_position=end,
+#             time_for_move=abs(start - end) / motor_speed,
+#         )
+#         yield from bps.prepare(motor, fly_info, group=grp, wait=True)
+#         yield from bps.kickoff(motor, group=grp, wait=True)
 
-        done = yield from bps.complete(motor)
-        LOGGER.info(f"flying motor =  {motor.name} at speed =({motor_speed})")
-        while not done.done:
-            yield from bps.trigger_and_read(dets + [motor])
-            yield from bps.checkpoint()
+#         done = yield from bps.complete(motor)
+#         LOGGER.info(f"flying motor =  {motor.name} at speed =({motor_speed})")
+#         while not done.done:
+#             yield from bps.trigger_and_read(dets + [motor])
+#             yield from bps.checkpoint()
 
-    yield from finalize_wrapper(
-        plan=inner_fast_scan_1d(dets, motor, start, end, motor_speed),
-        final_plan=reset_speed(old_speed, motor),
-    )
+#     yield from finalize_wrapper(
+#         plan=inner_fast_scan_1d(dets, motor, start, end, motor_speed),
+#         final_plan=reset_speed(old_speed, motor),
+#     )
