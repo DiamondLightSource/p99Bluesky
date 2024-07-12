@@ -1,4 +1,5 @@
 import asyncio
+from collections.abc import Callable
 
 from bluesky.protocols import Movable, Stoppable
 from ophyd_async.core import (
@@ -8,7 +9,7 @@ from ophyd_async.core import (
     StandardReadable,
     WatchableAsyncStatus,
 )
-from ophyd_async.core.signal import AsyncStatus, observe_value
+from ophyd_async.core.signal import AsyncStatus, SignalR, T, observe_value, wait_for_value
 from ophyd_async.core.utils import (
     DEFAULT_TIMEOUT,
     CalculatableTimeout,
@@ -130,6 +131,16 @@ class SoftMotor(StandardReadable, Movable, Stoppable):
         self.user_readback.set_name(name)
 
     @AsyncStatus.wrap
+    async def wait_for_value_with_status(
+        self,
+        signal: SignalR[T],
+        match: T | Callable[[T], bool],
+        timeout: float | None,
+    ):
+        """wrap wait for value so it return an asyncStatus"""
+        await wait_for_value(signal, match, timeout)
+
+    @AsyncStatus.wrap
     async def prepare(self, value: FlyMotorInfo):
         """Calculate required velocity and run-up distance, then if motor limits aren't
         breached, move to start position minus run-up distance"""
@@ -190,7 +201,12 @@ class SoftMotor(StandardReadable, Movable, Stoppable):
                 + 2 * acceleration_time
                 + DEFAULT_TIMEOUT
             )
-        move_status = self.user_setpoint.set(value, wait=True, timeout=timeout)
+        # modified to actually wait for set point to be set
+        await self.user_setpoint.set(value, wait=True, timeout=timeout)
+        # changed this so that the watcher keep going until the motor is stopped
+        move_status = self.wait_for_value_with_status(
+            self.motor_done_move, True, timeout=None
+        )
         async for current_position in observe_value(
             self.user_readback, done_status=move_status
         ):

@@ -8,7 +8,10 @@ from typing import Any
 
 import pytest
 from bluesky.run_engine import RunEngine
+from ophyd_async.core import DeviceCollector
 from super_state_machine.errors import TransitionError
+
+from soft_motor import SoftThreeAxisStage
 
 RECORD = str(Path(__file__).parent / "panda" / "db" / "panda.db")
 INCOMPLETE_BLOCK_RECORD = str(
@@ -20,7 +23,7 @@ EXTRA_BLOCKS_RECORD = str(
 )
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def RE(request):
     loop = asyncio.new_event_loop()
     loop.set_debug(True)
@@ -91,3 +94,33 @@ async def failing_coroutine() -> Callable[[], Any]:
         raise ValueError()
 
     return inner_coroutine
+
+
+A_BIT = 0.5
+
+
+@pytest.fixture(scope="session")
+async def fake_99():
+    p = subprocess.Popen(
+        [
+            "python",
+            "tests/epics/soft_ioc/p99_softioc.py",
+        ],
+    )
+
+    # Give the server time to start
+    await asyncio.sleep(A_BIT)
+    # Check it started successfully
+    print("setup")
+    yield p
+    p.terminate()
+    # Shut it down at the
+    p.wait()
+    await asyncio.sleep(A_BIT)
+
+
+@pytest.fixture(scope="session")
+def xyz_motor(fake_99):
+    with DeviceCollector(mock=False):
+        xyz_motor = SoftThreeAxisStage("p99-MO-STAGE-02:", name="xyz_motor")
+    yield xyz_motor
