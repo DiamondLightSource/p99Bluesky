@@ -221,7 +221,6 @@ def _fast_scan_1d(
 
         LOGGER.info(f"Set {motor.name} to end position({end}) and begin scan.")
         yield from bps.abs_set(motor.user_setpoint, end)
-        # yield from bps.wait_for(motor.motor_done_move, False)
         done = False
 
         while not done:

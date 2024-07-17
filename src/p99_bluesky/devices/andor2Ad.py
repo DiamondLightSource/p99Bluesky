@@ -55,7 +55,6 @@ class Andor2Ad(StandardDetector):
     ):
         self.drv = Andor2Driver(prefix + "CAM:")
         self.hdf = NDFileHDF(prefix + "HDF5:")
-        self.counter = 0
         super().__init__(
             Andor2Controller(self.drv),
             HDFWriter(

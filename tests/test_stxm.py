@@ -1,6 +1,4 @@
 from collections import defaultdict
-from math import ceil
-from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
@@ -15,7 +13,9 @@ from ophyd_async.epics.areadetector.drivers.ad_base import DetectorState
 
 from p99_bluesky.devices.andor2Ad import Andor2Ad, StaticDirectoryProviderPlus
 from p99_bluesky.devices.stages import ThreeAxisStage
-from p99_bluesky.plans.stxm import stxm_fast
+from p99_bluesky.plans.stxm import stxm_fast, stxm_step
+from p99_bluesky.sim.sim_stages import SimThreeAxisStage
+from p99_bluesky.utility.utility import step_size_to_step_num
 
 
 @pytest.fixture
@@ -42,16 +42,19 @@ async def sim_motor():
     yield sim_motor
 
 
-async def make_andor2(tmp_p: Path, prefix: str = "") -> Andor2Ad:
-    dp = StaticDirectoryProviderPlus(tmp_p, "test-")
-    async with DeviceCollector(mock=True):
-        detector = Andor2Ad(prefix, dp, "andor2")
-    return detector
+@pytest.fixture
+async def sim_motor_step():
+    async with DeviceCollector():
+        sim_motor_step = SimThreeAxisStage(name="sim_motor", instant=True)
+
+    yield sim_motor_step
 
 
 @pytest.fixture
 async def andor2(tmp_path) -> Andor2Ad:
-    andor2 = await make_andor2(tmp_path, prefix="TEST")
+    dp = StaticDirectoryProviderPlus(tmp_path, "test-")
+    async with DeviceCollector(mock=True):
+        andor2 = Andor2Ad("TEST", dp, "andor2")
 
     set_mock_value(andor2._controller.driver.array_size_x, 10)
     set_mock_value(andor2._controller.driver.array_size_y, 20)
@@ -60,6 +63,16 @@ async def andor2(tmp_path) -> Andor2Ad:
     set_mock_value(andor2.hdf.file_path, str(tmp_path))
     set_mock_value(andor2.hdf.full_file_name, str(tmp_path) + "/test-andor2-hdf0")
     set_mock_value(andor2.drv.detector_state, DetectorState.Idle)
+    rbv_mocks = Mock()
+    rbv_mocks.get.side_effect = range(0, 1000)
+    callback_on_mock_put(
+        andor2._writer.hdf.capture,
+        lambda *_, **__: set_mock_value(andor2._writer.hdf.capture, value=True),
+    )
+    callback_on_mock_put(
+        andor2.drv.acquire,
+        lambda *_, **__: set_mock_value(andor2._writer.hdf.num_captured, rbv_mocks.get()),
+    )
     return andor2
 
 
@@ -97,30 +110,17 @@ async def test_stxm_fast_zero_velocity_fail(
 
 
 async def test_stxm_fast(andor2: Andor2Ad, sim_motor: ThreeAxisStage, RE: RunEngine):
-    plan_time = 30
-    rbv_mocks = Mock()
-    rbv_mocks.get.side_effect = range(0, 100)
-    callback_on_mock_put(
-        andor2._writer.hdf.capture,
-        lambda *_, **__: set_mock_value(andor2._writer.hdf.capture, value=True),
-    )
-    callback_on_mock_put(
-        andor2.drv.acquire,
-        lambda *_, **__: set_mock_value(andor2._writer.hdf.num_captured, rbv_mocks.get()),
-    )
-
     docs = defaultdict(list)
 
     def capture_emitted(name, doc):
         docs[name].append(doc)
 
-    plan_time = 30
+    plan_time = 10
     count_time = 0.2
     step_size = 0.2
     step_start = -2
     step_end = 3
-    step_range = abs(step_start - step_end)
-    num_of_step = ceil(step_range / step_size)
+    num_of_step = step_size_to_step_num(step_start, step_end, step_size)
     RE(
         stxm_fast(
             det=andor2,
@@ -133,6 +133,7 @@ async def test_stxm_fast(andor2: Andor2Ad, sim_motor: ThreeAxisStage, RE: RunEng
             scan_end=2,
             plan_time=plan_time,
             step_size=step_size,
+            home=True,
         ),
         capture_emitted,
     )
@@ -148,17 +149,6 @@ async def test_stxm_fast(andor2: Andor2Ad, sim_motor: ThreeAxisStage, RE: RunEng
 
 
 async def test_stxm_fast_unknown_step(andor2, sim_motor, RE):
-    rbv_mocks = Mock()
-    rbv_mocks.get.side_effect = range(0, 100)
-    callback_on_mock_put(
-        andor2._writer.hdf.capture,
-        lambda *_, **__: set_mock_value(andor2._writer.hdf.capture, value=True),
-    )
-    callback_on_mock_put(
-        andor2.drv.acquire,
-        lambda *_, **__: set_mock_value(andor2._writer.hdf.num_captured, rbv_mocks.get()),
-    )
-
     docs = defaultdict(list)
 
     def capture_emitted(name, doc):
@@ -204,3 +194,83 @@ async def test_stxm_fast_unknown_step(andor2, sim_motor, RE):
         event=5,
         stop=1,
     )
+
+
+async def test_stxm_step_with_home(RE, sim_motor_step, andor2):
+    docs = defaultdict(list)
+
+    def capture_emitted(name, doc):
+        docs[name].append(doc)
+
+    await sim_motor_step.x.set(-1)
+    await sim_motor_step.y.set(-2)
+
+    RE(
+        stxm_step(
+            det=[andor2],
+            count_time=0.2,
+            x_step_motor=sim_motor_step.x,
+            x_step_start=0,
+            x_step_end=2,
+            x_step_size=0.1,
+            y_step_motor=sim_motor_step.y,
+            y_step_start=-1,
+            y_step_end=1,
+            y_step_size=0.5,
+            home=True,
+            snake=True,
+        ),
+        capture_emitted,
+    )
+
+    assert_emitted(
+        docs,
+        start=1,
+        descriptor=1,
+        stream_resource=1,
+        stream_datum=80,
+        event=80,
+        stop=1,
+    )
+    assert -1 == await sim_motor_step.x.user_readback.get_value()
+    assert -2 == await sim_motor_step.y.user_readback.get_value()
+
+
+async def test_stxm_step_without_home(RE, sim_motor_step, andor2):
+    docs = defaultdict(list)
+
+    def capture_emitted(name, doc):
+        docs[name].append(doc)
+
+    # await sim_motor_step.x.set(-1)
+    # await sim_motor_step.y.set(-2)
+    y_step_end = 1
+    x_step_end = 2
+    RE(
+        stxm_step(
+            det=[andor2],
+            count_time=0.2,
+            x_step_motor=sim_motor_step.x,
+            x_step_start=0,
+            x_step_end=x_step_end,
+            x_step_size=0.1,
+            y_step_motor=sim_motor_step.y,
+            y_step_start=-1,
+            y_step_end=y_step_end,
+            y_step_size=0.5,
+            home=False,
+            snake=False,
+        ),
+        capture_emitted,
+    )
+    assert_emitted(
+        docs,
+        start=1,
+        descriptor=1,
+        stream_resource=1,
+        stream_datum=80,
+        event=80,
+        stop=1,
+    )
+    assert x_step_end == await sim_motor_step.x.user_readback.get_value()
+    assert y_step_end == await sim_motor_step.y.user_readback.get_value()

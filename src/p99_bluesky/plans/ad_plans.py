@@ -44,10 +44,3 @@ def tiggerImg(dets: Andor2Ad | Andor3Ad, value: int):
         return (yield from bps.trigger_and_read([dets]))
 
     return (yield from innerTiggerImg())
-
-
-# def flyImg(dets: Andor2Ad | Andor3Ad, count_time: int, motor: SoftMotor):
-#     yield Msg("set", dets.drv.acquire_time, count_time)
-#     @bpp.stage_decorator([dets])
-#     @bpp.run_decorator()
-#     def innerFlyImg():
