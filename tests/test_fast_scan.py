@@ -6,9 +6,7 @@ from bluesky.run_engine import RunEngine
 from numpy import linspace
 from ophyd.sim import SynPeriodicSignal
 from ophyd_async.core import (
-    DeviceCollector,
     assert_emitted,
-    set_mock_value,
 )
 from ophyd_async.core.mock_signal_utils import get_mock_put
 
@@ -25,24 +23,24 @@ def det():
     return SynPeriodicSignal(name="rand", labels={"detectors"})
 
 
-@pytest.fixture
-async def sim_motor():
-    async with DeviceCollector(mock=True):
-        sim_motor = ThreeAxisStage("BLxxI-MO-TABLE-01:X", name="sim_motor")
-    set_mock_value(sim_motor.x.velocity, 2.78)
-    set_mock_value(sim_motor.x.high_limit_travel, 8.168)
-    set_mock_value(sim_motor.x.low_limit_travel, -8.888)
-    set_mock_value(sim_motor.x.user_readback, 1)
-    set_mock_value(sim_motor.x.motor_egu, "mm")
-    set_mock_value(sim_motor.x.motor_done_move, True)
-    set_mock_value(sim_motor.y.motor_egu, "mm")
-    set_mock_value(sim_motor.y.high_limit_travel, 5.168)
-    set_mock_value(sim_motor.y.low_limit_travel, -5.888)
-    set_mock_value(sim_motor.y.user_readback, 0)
-    set_mock_value(sim_motor.y.motor_egu, "mm")
-    set_mock_value(sim_motor.y.velocity, 2.88)
-    set_mock_value(sim_motor.y.motor_done_move, True)
-    yield sim_motor
+# @pytest.fixture
+# async def sim_motor():
+#     async with DeviceCollector(mock=True):
+#         sim_motor = ThreeAxisStage("BLxxI-MO-TABLE-01:X", name="sim_motor")
+#     set_mock_value(sim_motor.x.velocity, 2.78)
+#     set_mock_value(sim_motor.x.high_limit_travel, 8.168)
+#     set_mock_value(sim_motor.x.low_limit_travel, -8.888)
+#     set_mock_value(sim_motor.x.user_readback, 1)
+#     set_mock_value(sim_motor.x.motor_egu, "mm")
+#     set_mock_value(sim_motor.x.motor_done_move, True)
+#     set_mock_value(sim_motor.y.motor_egu, "mm")
+#     set_mock_value(sim_motor.y.high_limit_travel, 5.168)
+#     set_mock_value(sim_motor.y.low_limit_travel, -5.888)
+#     set_mock_value(sim_motor.y.user_readback, 0)
+#     set_mock_value(sim_motor.y.motor_egu, "mm")
+#     set_mock_value(sim_motor.y.velocity, 2.88)
+#     set_mock_value(sim_motor.y.motor_done_move, True)
+#     yield sim_motor
 
 
 async def test_fast_scan_1d_fail_limit_check(
@@ -71,14 +69,14 @@ async def test_fast_scan_1d_success(sim_motor: ThreeAxisStage, RE: RunEngine, de
     def capture_emitted(name, doc):
         docs[name].append(doc)
 
-    RE(fast_scan_1d([det], sim_motor.x, 5, -1, 10), capture_emitted)
+    RE(fast_scan_1d([det], sim_motor.x, 5, -1, 8.0), capture_emitted)
 
     assert 2.78 == await sim_motor.x.velocity.get_value()
     assert 2 == get_mock_put(sim_motor.x.user_setpoint).call_count
     assert 2 == get_mock_put(sim_motor.x.velocity).call_count
     # check speed is set and reset
     assert [
-        mock.call(10, wait=True, timeout=mock.ANY),
+        mock.call(8.0, wait=True, timeout=mock.ANY),
         mock.call(2.78, wait=True, timeout=mock.ANY),
     ] == get_mock_put(sim_motor.x.velocity).call_args_list
 

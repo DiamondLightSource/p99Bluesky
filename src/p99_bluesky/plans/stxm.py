@@ -1,8 +1,6 @@
-from collections.abc import Iterator
-from typing import Any
-
 import bluesky.plan_stubs as bps
-from blueapi.core import MsgGenerator
+
+# from blueapi.core import MsgGenerator
 from bluesky.plans import grid_scan
 from bluesky.preprocessors import (
     finalize_wrapper,
@@ -14,6 +12,7 @@ from p99_bluesky.log import LOGGER
 from p99_bluesky.plan_stubs.motor_plan import (
     check_within_limit,
     get_motor_positions,
+    get_velocity_and_step_size,
 )
 from p99_bluesky.plans.fast_scan import fast_scan_grid
 from p99_bluesky.utility.utility import step_size_to_step_num
@@ -34,7 +33,7 @@ def stxm_step(
     snake: bool = False,
     per_step=None,
     md=None,
-) -> MsgGenerator:
+):  # -> MsgGenerator:
     """Effectively the standard Bluesky grid scan adapted to use step size instead
     of number of point also added a centre option where it will move back to
       where it was before scan start."""
@@ -96,7 +95,7 @@ def stxm_fast(
     home: bool = False,
     snake_axes: bool = True,
     md=None,
-) -> MsgGenerator:
+):  # -> MsgGenerator:
     """
     This initiates an STXM scan, targeting a maximum scan speed of around 10Hz.
      It calculates the number of data points achievable based on the detector's count
@@ -152,10 +151,8 @@ def stxm_fast(
     scan_range = abs(scan_start - scan_end)
     step_range = abs(step_start - step_end)
     step_motor_speed = yield from bps.rd(step_motor.velocity)
-
     # get number of data point possible after adjusting plan_time for step movement speed
     num_data_point = (plan_time - step_range / step_motor_speed) / count_time
-
     # Assuming ideal step size is evenly distributed points within the two axis.
     if step_size is not None:
         ideal_step_size = abs(step_size)
@@ -172,7 +169,7 @@ def stxm_fast(
 
     LOGGER.info(
         f"ideal step size = {ideal_step_size} velocity = {ideal_velocity}"
-        + f"number of data point {num_data_point}"
+        + f" number of data point {num_data_point}"
     )
     # check the idelocity and step size against max velecity and adject in needed.
     velocity, ideal_step_size = yield from get_velocity_and_step_size(
@@ -180,8 +177,8 @@ def stxm_fast(
     )
     num_of_step = step_size_to_step_num(step_start, step_end, ideal_step_size)
     LOGGER.info(
-        f"{scan_motor.name}: velocity = {velocity},step size = {ideal_step_size}"
-        + f"number of step = {num_of_step}."
+        f" step size = {ideal_step_size}, {scan_motor.name}: velocity = {velocity}"
+        + f", number of step = {num_of_step}."
     )
     # Set count time on detector
     # yield from bps.abs_set(det.drv.acquire_time, count_time)
@@ -200,31 +197,6 @@ def stxm_fast(
         ),
         final_plan=clean_up(**clean_up_arg),
     )
-
-
-def get_velocity_and_step_size(
-    scan_motor: Motor, ideal_velocity: float, ideal_step_size: float
-) -> Iterator[Any]:
-    """Adjust the step size if the required velocity is higher than max value.
-
-    Parameters
-    ----------
-    scan_motor: Motor,
-        The motor which will move continuously.
-    ideal_velocity: float
-        The velocity wanted.
-    ideal_step_size: float(),
-        The non-scanning motor step size.
-    """
-    if ideal_velocity <= 0.0:
-        raise ValueError(f"{scan_motor.name} speed: {ideal_velocity} <= 0")
-    max_velocity = yield from bps.rd(scan_motor.max_velocity)
-    # if motor does not move fast enough increase step_motor step size
-    if ideal_velocity > max_velocity:
-        ideal_step_size = ideal_velocity / max_velocity * ideal_step_size
-        ideal_velocity = max_velocity
-
-    return ideal_velocity, ideal_step_size
 
 
 def clean_up(**kwargs):

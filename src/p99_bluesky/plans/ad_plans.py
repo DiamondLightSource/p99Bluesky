@@ -18,12 +18,17 @@ def takeImg(
     """
     grp = short_uid("prepare")
     deadtime: float = det.controller.get_deadtime(exposure)
-    tigger_info = TriggerInfo(n_img, det_trig, deadtime, exposure)
+    tigger_info = TriggerInfo(
+        number=n_img,
+        trigger=det_trig,
+        deadtime=deadtime,
+        livetime=exposure,
+        frame_timeout=None,
+    )
 
     @bpp.stage_decorator([det])
     @bpp.run_decorator()
     def innerTakeImg():
-        # yield from bps.create(name="primary")
         yield from bps.declare_stream(det, name="primary")
 
         yield from bps.prepare(det, tigger_info, group=grp, wait=True)

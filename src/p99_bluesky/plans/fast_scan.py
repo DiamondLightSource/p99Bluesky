@@ -2,41 +2,17 @@ from typing import Any
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
-from blueapi.core import MsgGenerator
+
+# from blueapi.core import MsgGenerator
 from bluesky.preprocessors import (
     finalize_wrapper,
 )
+from bluesky.utils import short_uid
 from numpy import linspace
-from ophyd_async.core.utils import (
-    CalculatableTimeout,
-    CalculateTimeout,
-)
-from ophyd_async.epics.motion import Motor
-from pydantic import BaseModel, Field
+from ophyd_async.epics.motion.motor import FlyMotorInfo, Motor
 
 from p99_bluesky.log import LOGGER
 from p99_bluesky.plan_stubs.motor_plan import check_within_limit
-
-
-# Remove once ophyd release
-class FlyMotorInfo(BaseModel):
-    """Minimal set of information required to fly a motor:"""
-
-    #: Absolute position of the motor once it finishes accelerating to desired
-    #: velocity, in motor EGUs
-    start_position: float = Field(frozen=True)
-
-    #: Absolute position of the motor once it begins decelerating from desired
-    #: velocity, in EGUs
-    end_position: float = Field(frozen=True)
-
-    #: Time taken for the motor to get from start_position to end_position, excluding
-    #: run-up and run-down, in seconds.
-    time_for_move: float = Field(frozen=True, gt=0)
-
-    #: Maximum time for the complete motor move, including run up and run down.
-    #: Defaults to `time_for_move` + run up and run down times + 10s.
-    timeout: CalculatableTimeout = Field(frozen=True, default=CalculateTimeout)
 
 
 def fast_scan_1d(
@@ -45,7 +21,7 @@ def fast_scan_1d(
     start: float,
     end: float,
     motor_speed: float | None = None,
-) -> MsgGenerator:
+):  # -> MsgGenerator:
     """
     One axis fast scan, using _fast_scan_1d.
 
@@ -93,7 +69,7 @@ def fast_scan_grid(
     scan_end: float,
     motor_speed: float | None = None,
     snake_axes: bool = False,
-) -> MsgGenerator:
+):  # -> MsgGenerator:
     """
     Same as fast_scan_1d with an extra axis to step through forming a grid.
 
@@ -164,76 +140,6 @@ def fast_scan_grid(
     )
 
 
-def _fast_scan_1d(
-    dets: list[Any],
-    motor: Motor,
-    start: float,
-    end: float,
-    motor_speed: float | None = None,
-) -> MsgGenerator:
-    """
-    The logic for one axis fast scan, used in fast_scan_1d and fast_scan_grid
-
-    In this scan:
-    1) The motor moves to the starting point.
-    2) The motor speed is changed
-    3) The motor is set in motion toward the end point
-    4) During this movement detectors are triggered and read out until
-      the endpoint is reached or stopped.
-    5) Clean up, reset motor speed.
-
-    Note: This is purely software triggering which result in variable accuracy.
-    However, fast scan does not require encoder and hardware setup and should
-    work for all motor. It is most frequently use for alignment and
-    slow motion measurements.
-
-    Parameters
-    ----------
-    detectors : list
-        list of 'readable' objects
-    motor : Motor (moveable, readable)
-
-    start: float
-        starting position.
-    end: float,
-        ending position
-
-    motor_speed: Optional[float] = None,
-        The speed of the motor during scan
-    """
-
-    # read the current speed and store it
-    old_speed = yield from bps.rd(motor.velocity)
-
-    def inner_fast_scan_1d(
-        dets: list[Any],
-        motor: Motor,
-        start: float,
-        end: float,
-        motor_speed: float | None = None,
-    ):
-        LOGGER.info(f"Moving {motor.name} to start position = {start}.")
-        yield from bps.mv(motor, start)  # move to start
-
-        if motor_speed:
-            LOGGER.info(f"Set {motor.name} speed = {motor_speed}.")
-            yield from bps.abs_set(motor.velocity, motor_speed)
-
-        LOGGER.info(f"Set {motor.name} to end position({end}) and begin scan.")
-        yield from bps.abs_set(motor.user_setpoint, end)
-        done = False
-
-        while not done:
-            yield from bps.trigger_and_read(dets + [motor])
-            done = yield from bps.rd(motor.motor_done_move)
-            yield from bps.checkpoint()
-
-    yield from finalize_wrapper(
-        plan=inner_fast_scan_1d(dets, motor, start, end, motor_speed),
-        final_plan=reset_speed(old_speed, motor),
-    )
-
-
 def reset_speed(old_speed, motor: Motor):
     LOGGER.info(f"Clean up: setting motor speed to {old_speed}.")
     if old_speed:
@@ -249,13 +155,91 @@ def clean_up():
 """
  Future: replace _fast_scan_1d with below to take advantage of ophyd aysnc motor.
 """
-# def _fly_scan_1d(
+
+
+def _fast_scan_1d(
+    dets: list[Any],
+    motor: Motor,
+    start: float,
+    end: float,
+    motor_speed: float | None = None,
+):  # -> MsgGenerator:
+    # read the current speed and store it
+    old_speed = yield from bps.rd(motor.velocity)
+
+    def inner_fast_scan_1d(
+        dets: list[Any],
+        motor: Motor,
+        start: float,
+        end: float,
+        motor_speed: float | None = None,
+    ):
+        if not motor_speed:
+            motor_speed = yield from bps.rd(motor.velocity)
+        LOGGER.info(
+            f"Starting 1d fly scan with {motor.name}:"
+            + f" start position = {start}, end position({end})."
+        )
+        grp = short_uid("prepare")
+        fly_info = FlyMotorInfo(
+            start_position=start,
+            end_position=end,
+            time_for_move=abs(start - end) / motor_speed,
+        )
+        yield from bps.prepare(motor, fly_info, group=grp, wait=True)
+        yield from bps.wait(group=grp)
+        yield from bps.kickoff(motor, group=grp, wait=True)
+
+        done = yield from bps.complete(motor)
+        LOGGER.info(f"flying motor =  {motor.name} at speed =({motor_speed})")
+        while not done.done:
+            yield from bps.trigger_and_read(dets + [motor])
+            yield from bps.checkpoint()
+
+    yield from finalize_wrapper(
+        plan=inner_fast_scan_1d(dets, motor, start, end, motor_speed),
+        final_plan=reset_speed(old_speed, motor),
+    )
+
+
+# def _fast_scan_1d(
 #     dets: list[Any],
 #     motor: Motor,
 #     start: float,
 #     end: float,
 #     motor_speed: float | None = None,
-# ) -> MsgGenerator:
+# ):  # -> MsgGenerator:
+#     """
+#     The logic for one axis fast scan, used in fast_scan_1d and fast_scan_grid
+
+#     In this scan:
+#     1) The motor moves to the starting point.
+#     2) The motor speed is changed
+#     3) The motor is set in motion toward the end point
+#     4) During this movement detectors are triggered and read out until
+#       the endpoint is reached or stopped.
+#     5) Clean up, reset motor speed.
+
+#     Note: This is purely software triggering which result in variable accuracy.
+#     However, fast scan does not require encoder and hardware setup and should
+#     work for all motor. It is most frequently use for alignment and
+#     slow motion measurements.
+
+#     Parameters
+#     ----------
+#     detectors : list
+#         list of 'readable' objects
+#     motor : Motor (moveable, readable)
+
+#     start: float
+#         starting position.
+#     end: float,
+#         ending position
+
+#     motor_speed: Optional[float] = None,
+#         The speed of the motor during scan
+#     """
+
 #     # read the current speed and store it
 #     old_speed = yield from bps.rd(motor.velocity)
 
@@ -272,23 +256,14 @@ def clean_up():
 #         if motor_speed:
 #             LOGGER.info(f"Set {motor.name} speed = {motor_speed}.")
 #             yield from bps.abs_set(motor.velocity, motor_speed)
-#         else:
-#             motor_speed = yield from bps.rd(motor.velocity)
 
 #         LOGGER.info(f"Set {motor.name} to end position({end}) and begin scan.")
-#         grp = short_uid("prepare")
-#         fly_info = FlyMotorInfo(
-#             start_position=start,
-#             end_position=end,
-#             time_for_move=abs(start - end) / motor_speed,
-#         )
-#         yield from bps.prepare(motor, fly_info, group=grp, wait=True)
-#         yield from bps.kickoff(motor, group=grp, wait=True)
+#         yield from bps.abs_set(motor.user_setpoint, end)
+#         done = False
 
-#         done = yield from bps.complete(motor)
-#         LOGGER.info(f"flying motor =  {motor.name} at speed =({motor_speed})")
-#         while not done.done:
+#         while not done:
 #             yield from bps.trigger_and_read(dets + [motor])
+#             done = yield from bps.rd(motor.motor_done_move)
 #             yield from bps.checkpoint()
 
 #     yield from finalize_wrapper(
