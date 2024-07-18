@@ -96,7 +96,7 @@ def stxm_step(
     # add 1 to step number to include the end point
     yield from finalize_wrapper(
         plan=grid_scan(
-            det,
+            [det],
             x_step_motor,
             x_step_start,
             x_step_end,
