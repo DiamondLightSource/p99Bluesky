@@ -95,7 +95,7 @@ async def test_stxm_fast(andor2: Andor2Ad, sim_motor: ThreeAxisStage, RE: RunEng
     )
 
 
-async def test_stxm_fast_unknown_step(andor2, sim_motor: ThreeAxisStage, RE):
+async def test_stxm_fast_unknown_step(andor2, sim_motor: ThreeAxisStage, RE: RunEngine):
     docs = defaultdict(list)
 
     def capture_emitted(name, doc):
@@ -145,7 +145,9 @@ async def test_stxm_fast_unknown_step(andor2, sim_motor: ThreeAxisStage, RE):
     )
 
 
-async def test_stxm_step_with_home(RE, sim_motor_step, andor2):
+async def test_stxm_step_with_home(
+    RE: RunEngine, sim_motor_step: SimThreeAxisStage, andor2: Andor2Ad
+):
     docs = defaultdict(list)
 
     def capture_emitted(name, doc):
@@ -156,16 +158,16 @@ async def test_stxm_step_with_home(RE, sim_motor_step, andor2):
 
     RE(
         stxm_step(
-            det=[andor2],
+            det=andor2,
             count_time=0.2,
             x_step_motor=sim_motor_step.x,
             x_step_start=0,
             x_step_end=2,
-            x_step_size=0.1,
+            x_step_size=0.2,
             y_step_motor=sim_motor_step.y,
             y_step_start=-1,
             y_step_end=1,
-            y_step_size=0.5,
+            y_step_size=0.25,
             home=True,
             snake=True,
         ),
@@ -177,15 +179,17 @@ async def test_stxm_step_with_home(RE, sim_motor_step, andor2):
         start=1,
         descriptor=1,
         stream_resource=1,
-        stream_datum=80,
-        event=80,
+        stream_datum=99,
+        event=99,
         stop=1,
     )
     assert -1 == await sim_motor_step.x.user_readback.get_value()
     assert -2 == await sim_motor_step.y.user_readback.get_value()
 
 
-async def test_stxm_step_without_home(RE, sim_motor_step, andor2):
+async def test_stxm_step_without_home(
+    RE: RunEngine, sim_motor_step: SimThreeAxisStage, andor2: Andor2Ad
+):
     docs = defaultdict(list)
 
     def capture_emitted(name, doc):
@@ -197,16 +201,16 @@ async def test_stxm_step_without_home(RE, sim_motor_step, andor2):
     x_step_end = 2
     RE(
         stxm_step(
-            det=[andor2],
+            det=andor2,
             count_time=0.2,
             x_step_motor=sim_motor_step.x,
             x_step_start=0,
             x_step_end=x_step_end,
-            x_step_size=0.1,
+            x_step_size=0.2,
             y_step_motor=sim_motor_step.y,
             y_step_start=-1,
             y_step_end=y_step_end,
-            y_step_size=0.5,
+            y_step_size=0.25,
             home=False,
             snake=False,
         ),
@@ -217,8 +221,8 @@ async def test_stxm_step_without_home(RE, sim_motor_step, andor2):
         start=1,
         descriptor=1,
         stream_resource=1,
-        stream_datum=80,
-        event=80,
+        stream_datum=99,
+        event=99,
         stop=1,
     )
     assert x_step_end == await sim_motor_step.x.user_readback.get_value()

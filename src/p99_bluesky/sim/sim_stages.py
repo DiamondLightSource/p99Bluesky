@@ -7,7 +7,7 @@ from ophyd_async.sim.demo.sim_motor import SimMotor
 
 class p99SimMotor(SimMotor):
     def __init__(self, name="", instant=True) -> None:
-        self.max_velocity = soft_signal_rw(float, 10000)
+        self.max_velocity = soft_signal_rw(float, 100)
         self.acceleration_time = soft_signal_rw(float, 0.1)
         self.precision = soft_signal_rw(int, 3)
         self.deadband = soft_signal_rw(float, 0.05)

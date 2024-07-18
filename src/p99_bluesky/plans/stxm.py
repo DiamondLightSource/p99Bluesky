@@ -5,9 +5,9 @@ from bluesky.plans import grid_scan
 from bluesky.preprocessors import (
     finalize_wrapper,
 )
-from ophyd_async.core import StandardDetector
 from ophyd_async.epics.motion import Motor
 
+from p99_bluesky.devices.andor2Ad import Andor2Ad, Andor3Ad
 from p99_bluesky.log import LOGGER
 from p99_bluesky.plan_stubs.motor_plan import (
     check_within_limit,
@@ -19,7 +19,7 @@ from p99_bluesky.utility.utility import step_size_to_step_num
 
 
 def stxm_step(
-    det: list[StandardDetector],
+    det: Andor2Ad | Andor3Ad,
     count_time: float,
     x_step_motor: Motor,
     x_step_start: float,
@@ -34,9 +34,39 @@ def stxm_step(
     per_step=None,
     md=None,
 ):  # -> MsgGenerator:
-    """Effectively the standard Bluesky grid scan adapted to use step size instead
-    of number of point also added a centre option where it will move back to
-      where it was before scan start."""
+    """Effectively the standard Bluesky grid scan adapted to use step size.
+     Added a centre option where it will move back to
+      where it was before scan start.
+
+    Parameters
+    ----------
+    det: Andor2Ad | Andor3Ad,
+        Area detector.
+    count_time: float
+        detector count time.
+    x_step_motor: Motor,
+        Motors
+    x_step_start: float,
+        Starting position for x_step_motor
+    x_step_size: float
+        Step size for x motor
+    step_end: float,
+        Ending position for x_step_motor
+    y_step_motor: Motor,
+        Motor
+    y_step_start: float,
+        Start for scanning axis
+    y_step_end: float,
+        End for scanning axis
+    y_step_size: float
+        Step size for y motor
+    home: bool = False,
+        If true move back to position before it scan
+    snake_axes: bool = True,
+        If true, do grid scan without moving scan axis back to start position.
+    md=None,
+
+    """
 
     # check limit before doing anything
     yield from check_within_limit(
@@ -57,22 +87,24 @@ def stxm_step(
     clean_up_arg = {}
     clean_up_arg["Home"] = home
     if home:
-        # add Move back to original positon
+        # Add move back  positon to origin
         clean_up_arg["Origin"] = yield from get_motor_positions(
             x_step_motor, y_step_motor
         )
-
+    # Set count time on detector
+    yield from bps.abs_set(det.drv.acquire_time, count_time)
+    # add 1 to step number to include the end point
     yield from finalize_wrapper(
         plan=grid_scan(
             det,
             x_step_motor,
             x_step_start,
             x_step_end,
-            step_size_to_step_num(x_step_start, x_step_end, x_step_size),
+            step_size_to_step_num(x_step_start, x_step_end, x_step_size) + 1,
             y_step_motor,
             y_step_start,
             y_step_end,
-            step_size_to_step_num(y_step_start, y_step_end, y_step_size),
+            step_size_to_step_num(y_step_start, y_step_end, y_step_size) + 1,
             snake_axes=snake,
             per_step=None,
             md=None,
@@ -82,7 +114,7 @@ def stxm_step(
 
 
 def stxm_fast(
-    det: StandardDetector,
+    det: Andor2Ad | Andor3Ad,
     count_time: float,
     step_motor: Motor,
     step_start: float,
@@ -127,6 +159,11 @@ def stxm_fast(
         How long it should take in second
     step_size: float | None = None,
         Optional step size for the slow axis
+    home: bool = False,
+        If true move back to position before it scan
+    snake_axes: bool = True,
+        If true, do grid scan without moving scan axis back to start position.
+    md=None,
 
     """
     clean_up_arg = {}
@@ -145,6 +182,7 @@ def stxm_fast(
         ],
         step_motor,
     )
+    # Add move back  positon to origin
     if home:
         clean_up_arg["Origin"] = yield from get_motor_positions(scan_motor, step_motor)
 
@@ -181,7 +219,7 @@ def stxm_fast(
         + f", number of step = {num_of_step}."
     )
     # Set count time on detector
-    # yield from bps.abs_set(det.drv.acquire_time, count_time)
+    yield from bps.abs_set(det.drv.acquire_time, count_time)
     yield from finalize_wrapper(
         plan=fast_scan_grid(
             [det],
@@ -202,4 +240,5 @@ def stxm_fast(
 def clean_up(**kwargs):
     LOGGER.info(f"Clean up: {list(kwargs)}")
     if kwargs["Home"]:
+        # move motor back to stored position
         yield from bps.mov(*kwargs["Origin"])
