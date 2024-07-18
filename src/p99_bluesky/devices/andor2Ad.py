@@ -10,33 +10,6 @@ from p99_bluesky.devices.epics.andor3_controller import Andor3Controller
 from p99_bluesky.devices.epics.drivers.andor2_driver import Andor2Driver
 from p99_bluesky.devices.epics.drivers.andor3_driver import Andor3Driver
 
-# class StaticDirectoryProviderPlus:
-#     """
-#     Same as DirectoryProvider but add 1 to the file name each time.
-
-#     """
-
-#     def __init__(
-#         self,
-#         directory_path: Path,
-#         filename_prefix: str = "",
-#         resource_dir: Path | None = None,
-#     ):
-#         self.counter = 0
-#         if resource_dir is None:
-#             resource_dir = Path(".")
-#         self._directory_info = DirectoryInfo(
-#             root=directory_path,
-#             resource_dir=resource_dir,
-#             prefix=filename_prefix,
-#             suffix="",
-#         )
-
-#     def __call__(self) -> DirectoryInfo:
-#         self._directory_info.suffix = f"{self.counter}"
-#         self.counter += 1
-#         return self._directory_info
-
 
 class Andor2Ad(StandardDetector):
     _controller: Andor2Controller

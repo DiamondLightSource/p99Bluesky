@@ -8,7 +8,7 @@ from ophyd_async.core import (
     set_mock_value,
 )
 
-from p99_bluesky.devices.andor2Ad import Andor2Ad
+from p99_bluesky.devices.andor2Ad import Andor2Ad, Andor3Ad
 from p99_bluesky.devices.stages import ThreeAxisStage
 from p99_bluesky.plans.stxm import stxm_fast, stxm_step
 from p99_bluesky.sim.sim_stages import SimThreeAxisStage
@@ -95,7 +95,9 @@ async def test_stxm_fast(andor2: Andor2Ad, sim_motor: ThreeAxisStage, RE: RunEng
     )
 
 
-async def test_stxm_fast_unknown_step(andor2, sim_motor: ThreeAxisStage, RE: RunEngine):
+async def test_stxm_fast_unknown_step(
+    andor3: Andor3Ad, sim_motor: ThreeAxisStage, RE: RunEngine
+):
     docs = defaultdict(list)
 
     def capture_emitted(name, doc):
@@ -119,7 +121,7 @@ async def test_stxm_fast_unknown_step(andor2, sim_motor: ThreeAxisStage, RE: Run
     docs = defaultdict(list)
     RE(
         stxm_fast(
-            det=andor2,
+            det=andor3,
             count_time=count_time,
             step_motor=sim_motor.x,
             step_start=step_start,

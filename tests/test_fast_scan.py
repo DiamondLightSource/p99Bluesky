@@ -85,6 +85,30 @@ async def test_fast_scan_1d_success(sim_motor: ThreeAxisStage, RE: RunEngine, de
     assert_emitted(docs, start=1, descriptor=1, event=1, stop=1)
 
 
+async def test_fast_scan_1d_success_without_speed(
+    sim_motor: ThreeAxisStage, RE: RunEngine, det
+):
+    docs = defaultdict(list)
+
+    def capture_emitted(name, doc):
+        docs[name].append(doc)
+
+    RE(fast_scan_1d([det], sim_motor.x, 5, -1), capture_emitted)
+
+    assert 2.78 == await sim_motor.x.velocity.get_value()
+    assert 2 == get_mock_put(sim_motor.x.user_setpoint).call_count
+    assert 2 == get_mock_put(sim_motor.x.velocity).call_count
+    # check speed is set and reset
+    assert [
+        mock.call(pytest.approx(2.78), wait=True, timeout=mock.ANY),
+        mock.call(pytest.approx(2.78), wait=True, timeout=mock.ANY),
+    ] == get_mock_put(sim_motor.x.velocity).call_args_list
+
+    """Only 1 event as sim motor motor_done_move is set to true,
+      so only 1 loop is ran"""
+    assert_emitted(docs, start=1, descriptor=1, event=1, stop=1)
+
+
 async def test_fast_scan_2d_success(sim_motor: ThreeAxisStage, RE: RunEngine, det):
     docs = defaultdict(list)
 
