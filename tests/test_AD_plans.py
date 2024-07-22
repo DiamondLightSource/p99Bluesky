@@ -10,7 +10,7 @@ from ophyd_async.core import (
 )
 from ophyd_async.epics.areadetector.drivers.ad_base import DetectorState
 
-from p99_bluesky.devices.andor2Ad import Andor2Ad, Andor3Ad
+from p99_bluesky.devices.andorAd import Andor2Ad, Andor3Ad
 from p99_bluesky.devices.stages import ThreeAxisStage
 from p99_bluesky.plans.ad_plans import takeImg, tiggerImg
 

@@ -13,7 +13,7 @@ from ophyd_async.core import (
 from ophyd_async.epics.areadetector import SingleTriggerDet
 from ophyd_async.epics.areadetector.writers.nd_plugin import NDPluginStats
 
-from p99_bluesky.devices.andor2Ad import Andor2Ad
+from p99_bluesky.devices.andorAd import Andor2Ad
 from p99_bluesky.devices.epics.drivers.andor2_driver import ImageMode
 
 

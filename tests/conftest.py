@@ -19,7 +19,7 @@ from ophyd_async.core import (
 )
 from super_state_machine.errors import TransitionError
 
-from p99_bluesky.devices.andor2Ad import Andor2Ad, Andor3Ad
+from p99_bluesky.devices.andorAd import Andor2Ad, Andor3Ad
 from p99_bluesky.devices.stages import ThreeAxisStage
 from soft_motor import SoftThreeAxisStage
 

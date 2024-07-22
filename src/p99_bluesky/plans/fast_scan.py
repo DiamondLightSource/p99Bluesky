@@ -69,6 +69,7 @@ def fast_scan_grid(
     scan_end: float,
     motor_speed: float | None = None,
     snake_axes: bool = False,
+    md=None,
 ):  # -> MsgGenerator:
     """
     Same as fast_scan_1d with an extra axis to step through forming a grid.

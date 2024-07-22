@@ -8,7 +8,7 @@ from ophyd_async.core import (
     set_mock_value,
 )
 
-from p99_bluesky.devices.andor2Ad import Andor2Ad, Andor3Ad
+from p99_bluesky.devices.andorAd import Andor2Ad, Andor3Ad
 from p99_bluesky.devices.stages import ThreeAxisStage
 from p99_bluesky.plans.stxm import stxm_fast, stxm_step
 from p99_bluesky.sim.sim_stages import SimThreeAxisStage

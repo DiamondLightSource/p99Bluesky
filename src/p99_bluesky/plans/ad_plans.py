@@ -3,7 +3,7 @@ from bluesky import preprocessors as bpp
 from bluesky.utils import Msg, short_uid
 from ophyd_async.core import DetectorTrigger, TriggerInfo
 
-from p99_bluesky.devices.andor2Ad import Andor2Ad, Andor3Ad
+from p99_bluesky.devices.andorAd import Andor2Ad, Andor3Ad
 
 
 def takeImg(

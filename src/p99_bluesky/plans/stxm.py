@@ -7,7 +7,7 @@ from bluesky.preprocessors import (
 )
 from ophyd_async.epics.motion import Motor
 
-from p99_bluesky.devices.andor2Ad import Andor2Ad, Andor3Ad
+from p99_bluesky.devices.andorAd import Andor2Ad, Andor3Ad
 from p99_bluesky.log import LOGGER
 from p99_bluesky.plan_stubs.motor_plan import (
     check_within_limit,
@@ -64,6 +64,7 @@ def stxm_step(
         If true move back to position before it scan
     snake_axes: bool = True,
         If true, do grid scan without moving scan axis back to start position.
+    per_step:
     md=None,
 
     """
@@ -106,8 +107,8 @@ def stxm_step(
             y_step_end,
             step_size_to_step_num(y_step_start, y_step_end, y_step_size) + 1,
             snake_axes=snake,
-            per_step=None,
-            md=None,
+            per_step=per_step,
+            md=md,
         ),
         final_plan=clean_up(**clean_up_arg),
     )
