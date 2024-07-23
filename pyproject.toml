@@ -15,9 +15,10 @@ dependencies = [
     #Things that are neeeded for running
     "blueapi",
     "ophyd",
-    "ophyd-async>=0.3a5",
+    "dls-dodal==1.25.0",
+    "ophyd-async <=0.4.0",
     "bluesky",
-    "dls-dodal>=1.25.0",
+
 
     #usefull stuff for testing or running without blue api
     "jupyter",

@@ -3,7 +3,7 @@ from bluesky import preprocessors as bpp
 from bluesky.utils import Msg, short_uid
 from ophyd_async.core import DetectorTrigger, TriggerInfo
 
-from p99_bluesky.devices.andor2Ad import Andor2Ad, Andor3Ad
+from p99_bluesky.devices.andorAd import Andor2Ad, Andor3Ad
 
 
 def takeImg(
@@ -18,12 +18,17 @@ def takeImg(
     """
     grp = short_uid("prepare")
     deadtime: float = det.controller.get_deadtime(exposure)
-    tigger_info = TriggerInfo(n_img, det_trig, deadtime, exposure)
+    tigger_info = TriggerInfo(
+        number=n_img,
+        trigger=det_trig,
+        deadtime=deadtime,
+        livetime=exposure,
+        frame_timeout=None,
+    )
 
     @bpp.stage_decorator([det])
     @bpp.run_decorator()
     def innerTakeImg():
-        # yield from bps.create(name="primary")
         yield from bps.declare_stream(det, name="primary")
 
         yield from bps.prepare(det, tigger_info, group=grp, wait=True)
@@ -44,10 +49,3 @@ def tiggerImg(dets: Andor2Ad | Andor3Ad, value: int):
         return (yield from bps.trigger_and_read([dets]))
 
     return (yield from innerTiggerImg())
-
-
-# def flyImg(dets: Andor2Ad | Andor3Ad, count_time: int, motor: SoftMotor):
-#     yield Msg("set", dets.drv.acquire_time, count_time)
-#     @bpp.stage_decorator([dets])
-#     @bpp.run_decorator()
-#     def innerFlyImg():

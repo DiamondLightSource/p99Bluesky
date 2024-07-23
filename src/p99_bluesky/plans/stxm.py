@@ -1,14 +1,117 @@
-from collections.abc import Iterator
-from math import ceil
-from typing import Any
-
 import bluesky.plan_stubs as bps
-from blueapi.core import MsgGenerator
+
+# from blueapi.core import MsgGenerator
+from bluesky.plans import grid_scan
+from bluesky.preprocessors import (
+    finalize_wrapper,
+)
 from ophyd_async.epics.motion import Motor
 
-from p99_bluesky.devices.andor2Ad import Andor2Ad, Andor3Ad
+from p99_bluesky.devices.andorAd import Andor2Ad, Andor3Ad
 from p99_bluesky.log import LOGGER
+from p99_bluesky.plan_stubs.motor_plan import (
+    check_within_limit,
+    get_motor_positions,
+    get_velocity_and_step_size,
+)
 from p99_bluesky.plans.fast_scan import fast_scan_grid
+from p99_bluesky.utility.utility import step_size_to_step_num
+
+
+def stxm_step(
+    det: Andor2Ad | Andor3Ad,
+    count_time: float,
+    x_step_motor: Motor,
+    x_step_start: float,
+    x_step_end: float,
+    x_step_size: float,
+    y_step_motor: Motor,
+    y_step_start: float,
+    y_step_end: float,
+    y_step_size: float,
+    home: bool = False,
+    snake: bool = False,
+    per_step=None,
+    md=None,
+):  # -> MsgGenerator:
+    """Effectively the standard Bluesky grid scan adapted to use step size.
+     Added a centre option where it will move back to
+      where it was before scan start.
+
+    Parameters
+    ----------
+    det: Andor2Ad | Andor3Ad,
+        Area detector.
+    count_time: float
+        detector count time.
+    x_step_motor: Motor,
+        Motors
+    x_step_start: float,
+        Starting position for x_step_motor
+    x_step_size: float
+        Step size for x motor
+    step_end: float,
+        Ending position for x_step_motor
+    y_step_motor: Motor,
+        Motor
+    y_step_start: float,
+        Start for scanning axis
+    y_step_end: float,
+        End for scanning axis
+    y_step_size: float
+        Step size for y motor
+    home: bool = False,
+        If true move back to position before it scan
+    snake_axes: bool = True,
+        If true, do grid scan without moving scan axis back to start position.
+    per_step:
+    md=None,
+
+    """
+
+    # check limit before doing anything
+    yield from check_within_limit(
+        [
+            x_step_start,
+            x_step_end,
+        ],
+        x_step_motor,
+    )
+    yield from check_within_limit(
+        [
+            y_step_start,
+            y_step_end,
+        ],
+        y_step_motor,
+    )
+    # Dictionary to store clean up options
+    clean_up_arg = {}
+    clean_up_arg["Home"] = home
+    if home:
+        # Add move back  positon to origin
+        clean_up_arg["Origin"] = yield from get_motor_positions(
+            x_step_motor, y_step_motor
+        )
+    # Set count time on detector
+    yield from bps.abs_set(det.drv.acquire_time, count_time)
+    # add 1 to step number to include the end point
+    yield from finalize_wrapper(
+        plan=grid_scan(
+            [det],
+            x_step_motor,
+            x_step_start,
+            x_step_end,
+            step_size_to_step_num(x_step_start, x_step_end, x_step_size) + 1,
+            y_step_motor,
+            y_step_start,
+            y_step_end,
+            step_size_to_step_num(y_step_start, y_step_end, y_step_size) + 1,
+            snake_axes=snake,
+            per_step=per_step,
+            md=md,
+        ),
+        final_plan=clean_up(**clean_up_arg),
+    )
 
 
 def stxm_fast(
@@ -22,7 +125,10 @@ def stxm_fast(
     scan_end: float,
     plan_time: float,
     step_size: float | None = None,
-) -> MsgGenerator:
+    home: bool = False,
+    snake_axes: bool = True,
+    md=None,
+):  # -> MsgGenerator:
     """
     This initiates an STXM scan, targeting a maximum scan speed of around 10Hz.
      It calculates the number of data points achievable based on the detector's count
@@ -54,21 +160,43 @@ def stxm_fast(
         How long it should take in second
     step_size: float | None = None,
         Optional step size for the slow axis
+    home: bool = False,
+        If true move back to position before it scan
+    snake_axes: bool = True,
+        If true, do grid scan without moving scan axis back to start position.
+    md=None,
 
     """
+    clean_up_arg = {}
+    clean_up_arg["Home"] = home
+    yield from check_within_limit(
+        [
+            scan_start,
+            scan_end,
+        ],
+        scan_motor,
+    )
+    yield from check_within_limit(
+        [
+            step_start,
+            step_end,
+        ],
+        step_motor,
+    )
+    # Add move back  positon to origin
+    if home:
+        clean_up_arg["Origin"] = yield from get_motor_positions(scan_motor, step_motor)
 
     scan_range = abs(scan_start - scan_end)
     step_range = abs(step_start - step_end)
     step_motor_speed = yield from bps.rd(step_motor.velocity)
-
     # get number of data point possible after adjusting plan_time for step movement speed
     num_data_point = (plan_time - step_range / step_motor_speed) / count_time
-
     # Assuming ideal step size is evenly distributed points within the two axis.
     if step_size is not None:
         ideal_step_size = abs(step_size)
         if step_size == 0:
-            ideal_velocity = 0  # zero step size
+            ideal_velocity = 0  # ideal_velocity: speed that allow the required step size.
         else:
             ideal_velocity = scan_range / (
                 (num_data_point / abs(step_range / ideal_step_size)) * count_time
@@ -80,51 +208,38 @@ def stxm_fast(
 
     LOGGER.info(
         f"ideal step size = {ideal_step_size} velocity = {ideal_velocity}"
-        + f"number of data point {num_data_point}"
+        + f" number of data point {num_data_point}"
     )
+    # check the idelocity and step size against max velecity and adject in needed.
     velocity, ideal_step_size = yield from get_velocity_and_step_size(
         scan_motor, ideal_velocity, ideal_step_size
     )
-    LOGGER.info(f"{scan_motor.name} velocity = {velocity}.")
-    LOGGER.info(f"{step_motor.name} step size = {ideal_step_size}.")
+    num_of_step = step_size_to_step_num(step_start, step_end, ideal_step_size)
+    LOGGER.info(
+        f" step size = {ideal_step_size}, {scan_motor.name}: velocity = {velocity}"
+        + f", number of step = {num_of_step}."
+    )
     # Set count time on detector
     yield from bps.abs_set(det.drv.acquire_time, count_time)
-    num_of_step = ceil(step_range / ideal_step_size)
-    LOGGER.info(f"{step_motor.name} number of step = {num_of_step}.")
-    yield from fast_scan_grid(
-        [det],
-        step_motor,
-        step_start,
-        step_end,
-        num_of_step,
-        scan_motor,
-        scan_start,
-        scan_end,
-        velocity,
-        snake_axes=True,
+    yield from finalize_wrapper(
+        plan=fast_scan_grid(
+            [det],
+            step_motor,
+            step_start,
+            step_end,
+            num_of_step,
+            scan_motor,
+            scan_start,
+            scan_end,
+            velocity,
+            snake_axes=snake_axes,
+        ),
+        final_plan=clean_up(**clean_up_arg),
     )
 
 
-def get_velocity_and_step_size(
-    scan_motor: Motor, ideal_velocity: float, ideal_step_size: float
-) -> Iterator[Any]:
-    """Adjust the step size if the required velocity is higher than max value.
-
-    Parameters
-    ----------
-    scan_motor: Motor,
-        The motor which will move continuously.
-    ideal_velocity: float
-        The velocity wanted.
-    ideal_step_size: float
-        The non-scanning motor step size.
-    """
-    if ideal_velocity <= 0.0:
-        raise ValueError(f"{scan_motor.name} speed: {ideal_velocity} <= 0")
-    max_velocity = yield from bps.rd(scan_motor.max_velocity)
-    # if motor does not move fast enough increase step_motor step size
-    if ideal_velocity > max_velocity:
-        ideal_step_size = ideal_velocity / max_velocity * ideal_step_size
-        ideal_velocity = max_velocity
-
-    return ideal_velocity, ideal_step_size
+def clean_up(**kwargs):
+    LOGGER.info(f"Clean up: {list(kwargs)}")
+    if kwargs["Home"]:
+        # move motor back to stored position
+        yield from bps.mov(*kwargs["Origin"])
