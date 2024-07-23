@@ -174,7 +174,7 @@ async def andor2(static_path_provider: StaticPathProvider) -> Andor2Ad:
     )
 
     rbv_mocks = Mock()
-    rbv_mocks.get.side_effect = range(0, 100)
+    rbv_mocks.get.side_effect = range(0, 10000)
     callback_on_mock_put(
         andor2._writer.hdf.capture,
         lambda *_, **__: set_mock_value(andor2._writer.hdf.capture, value=True),

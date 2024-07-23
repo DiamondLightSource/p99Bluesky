@@ -1,3 +1,4 @@
+import time
 from collections import defaultdict
 
 import pytest
@@ -21,6 +22,14 @@ async def sim_motor_step():
         sim_motor_step = SimThreeAxisStage(name="sim_motor", instant=True)
 
     yield sim_motor_step
+
+
+@pytest.fixture
+async def sim_motor_fly():
+    async with DeviceCollector():
+        sim_motor_fly = SimThreeAxisStage(name="sim_motor_fly", instant=False)
+
+    yield sim_motor_fly
 
 
 async def test_stxm_fast_zero_velocity_fail(
@@ -229,3 +238,40 @@ async def test_stxm_step_without_home(
     )
     assert x_step_end == await sim_motor_step.x.user_readback.get_value()
     assert y_step_end == await sim_motor_step.y.user_readback.get_value()
+
+
+async def test_stxm_fast_sim_flyable_motor(
+    andor2: Andor2Ad, sim_motor_fly: ThreeAxisStage, RE: RunEngine
+):
+    docs = defaultdict(list)
+
+    def capture_emitted(name, doc):
+        docs[name].append(doc)
+
+    plan_time = 1.5
+    count_time = 0.2
+    step_size = 0.2
+    step_start = -0.5
+    step_end = 0.5
+    start_monotonic = time.monotonic()
+    RE(
+        stxm_fast(
+            det=andor2,
+            count_time=count_time,
+            step_motor=sim_motor_fly.x,
+            step_start=step_start,
+            step_end=step_end,
+            scan_motor=sim_motor_fly.y,
+            scan_start=1,
+            scan_end=2,
+            plan_time=plan_time,
+            step_size=step_size,
+            snake_axes=True,
+            home=False,
+        ),
+        capture_emitted,
+    )
+    # The overhead is about 3 sec in pytest
+    assert time.monotonic() <= start_monotonic + plan_time * 1.1 + 3
+
+    assert docs["event"].__len__() == docs["stream_datum"].__len__()

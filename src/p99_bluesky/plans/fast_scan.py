@@ -77,16 +77,28 @@ def fast_scan_grid(
      Parameters
      ----------
      detectors : list
-         list of 'readable' objects
-     step_motor : Motor (moveable, readable)
-     scan_motor:  Motor (moveable, readable)
-     start: float
-         starting position.
-     end: float,
-         ending position
-
-     motor_speed: Optional[float] = None,
-         The speed of the motor during scan
+        list of 'readable' objects
+     step_motor :
+        Motor (moveable, readable)
+     step_start :
+        Starting position for slow/stepping motor.
+    step_end :
+        Ending position for step motro.
+    num_step:
+        Number of steps to take going from start to end.
+    scan_motor:  Motor (moveable, readable)
+        The motor that will not stop during measurements.
+    scan_start:
+        Scan motor starting position.
+    scan_end:
+        Scan motor ending position.
+    motor_speed: float optional.
+        Speed of the scanning motor during measurements.
+        If None, it will use current speed.
+    snake_axes:
+        If Ture. Scan motor will start an other line where it ended.
+    md:
+        place holder for meta data for future.
     """
 
     @bpp.stage_decorator(dets)
@@ -151,11 +163,6 @@ def clean_up():
     LOGGER.info("Clean up")
     # possibly use to move back to starting position.
     yield from bps.null()
-
-
-"""
- Future: replace _fast_scan_1d with below to take advantage of ophyd aysnc motor.
-"""
 
 
 def _fast_scan_1d(
