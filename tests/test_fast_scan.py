@@ -23,26 +23,6 @@ def det():
     return SynPeriodicSignal(name="rand", labels={"detectors"})
 
 
-# @pytest.fixture
-# async def sim_motor():
-#     async with DeviceCollector(mock=True):
-#         sim_motor = ThreeAxisStage("BLxxI-MO-TABLE-01:X", name="sim_motor")
-#     set_mock_value(sim_motor.x.velocity, 2.78)
-#     set_mock_value(sim_motor.x.high_limit_travel, 8.168)
-#     set_mock_value(sim_motor.x.low_limit_travel, -8.888)
-#     set_mock_value(sim_motor.x.user_readback, 1)
-#     set_mock_value(sim_motor.x.motor_egu, "mm")
-#     set_mock_value(sim_motor.x.motor_done_move, True)
-#     set_mock_value(sim_motor.y.motor_egu, "mm")
-#     set_mock_value(sim_motor.y.high_limit_travel, 5.168)
-#     set_mock_value(sim_motor.y.low_limit_travel, -5.888)
-#     set_mock_value(sim_motor.y.user_readback, 0)
-#     set_mock_value(sim_motor.y.motor_egu, "mm")
-#     set_mock_value(sim_motor.y.velocity, 2.88)
-#     set_mock_value(sim_motor.y.motor_done_move, True)
-#     yield sim_motor
-
-
 async def test_fast_scan_1d_fail_limit_check(
     sim_motor: ThreeAxisStage, RE: RunEngine, det
 ):
