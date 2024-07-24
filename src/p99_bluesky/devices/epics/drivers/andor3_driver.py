@@ -1,7 +1,7 @@
 from enum import Enum
 
-from ophyd_async.epics.areadetector.drivers.ad_base import ADBase
-from ophyd_async.epics.signal.signal import epics_signal_rw, epics_signal_rw_rbv
+from ophyd_async.epics.adcore._core_io import ADBaseIO
+from ophyd_async.epics.signal import epics_signal_rw, epics_signal_rw_rbv
 
 
 class TriggerMode(str, Enum):
@@ -17,7 +17,7 @@ class ImageMode(str, Enum):
     continuous = "Continuous"
 
 
-class Andor3Driver(ADBase):
+class Andor3Driver(ADBaseIO):
     """
     Epics pv for andor model:ZYLA-5.5-cl3 as deployed on p99
     """

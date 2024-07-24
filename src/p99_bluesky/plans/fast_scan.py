@@ -9,7 +9,7 @@ from bluesky.preprocessors import (
 )
 from bluesky.utils import short_uid
 from numpy import linspace
-from ophyd_async.epics.motion.motor import FlyMotorInfo, Motor
+from ophyd_async.epics.motor import FlyMotorInfo, Motor
 
 from p99_bluesky.log import LOGGER
 from p99_bluesky.plan_stubs.motor_plan import check_within_limit
@@ -217,7 +217,7 @@ def _fast_scan_1d(
             motor_speed = yield from bps.rd(motor.velocity)
         LOGGER.info(
             f"Starting 1d fly scan with {motor.name}:"
-            + f" start position = {start}, end position({end})."
+            + f" start position = {start}, end position = {end}."
         )
         grp = short_uid("prepare")
         fly_info = FlyMotorInfo(
@@ -230,7 +230,7 @@ def _fast_scan_1d(
         yield from bps.kickoff(motor, group=grp, wait=True)
 
         done = yield from bps.complete(motor)
-        LOGGER.info(f"flying motor =  {motor.name} at speed =({motor_speed})")
+        LOGGER.info(f"flying motor =  {motor.name} at speed = {motor_speed}")
         while not done.done:
             yield from bps.trigger_and_read(dets + [motor])
             yield from bps.checkpoint()

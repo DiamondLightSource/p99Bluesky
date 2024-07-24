@@ -2,7 +2,7 @@ from collections.abc import Iterator
 from typing import Any
 
 import bluesky.plan_stubs as bps
-from ophyd_async.epics.motion import Motor
+from ophyd_async.epics.motor import Motor
 
 from p99_bluesky.log import LOGGER
 

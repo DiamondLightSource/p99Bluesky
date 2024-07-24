@@ -5,7 +5,7 @@ from bluesky.plans import grid_scan
 from bluesky.preprocessors import (
     finalize_wrapper,
 )
-from ophyd_async.epics.motion import Motor
+from ophyd_async.epics.motor import Motor
 
 from p99_bluesky.devices.andorAd import Andor2Ad, Andor3Ad
 from p99_bluesky.log import LOGGER

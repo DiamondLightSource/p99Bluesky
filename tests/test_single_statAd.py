@@ -10,8 +10,7 @@ from ophyd_async.core import (
     callback_on_mock_put,
     set_mock_value,
 )
-from ophyd_async.epics.areadetector import SingleTriggerDet
-from ophyd_async.epics.areadetector.writers.nd_plugin import NDPluginStats
+from ophyd_async.epics.adcore import NDPluginStatsIO, SingleTriggerDetector
 
 from p99_bluesky.devices.andorAd import Andor2Ad
 from p99_bluesky.devices.epics.drivers.andor2_driver import ImageMode
@@ -20,8 +19,8 @@ from p99_bluesky.devices.epics.drivers.andor2_driver import ImageMode
 @pytest.fixture
 async def single_trigger_stat_det(andor2: Andor2Ad):
     async with DeviceCollector(mock=True):
-        stats = NDPluginStats("PREFIX:STATS")
-        det = SingleTriggerDet(
+        stats = NDPluginStatsIO("PREFIX:STATS")
+        det = SingleTriggerDetector(
             drv=andor2.drv, stats=stats, read_uncached=[andor2.drv.stat_mean]
         )
 
@@ -31,7 +30,7 @@ async def single_trigger_stat_det(andor2: Andor2Ad):
 
 
 async def test_single_stat_ad(
-    single_trigger_stat_det: SingleTriggerDet, RE: RunEngine, andor2: Andor2Ad
+    single_trigger_stat_det: SingleTriggerDetector, RE: RunEngine, andor2: Andor2Ad
 ):
     docs = defaultdict(list)
 

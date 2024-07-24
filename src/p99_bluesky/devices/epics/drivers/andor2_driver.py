@@ -1,7 +1,7 @@
 from enum import Enum
 
-from ophyd_async.epics.areadetector.drivers.ad_base import ADBase
-from ophyd_async.epics.signal.signal import (
+from ophyd_async.epics.adcore._core_io import ADBaseIO
+from ophyd_async.epics.signal import (
     epics_signal_r,
     epics_signal_rw,
     epics_signal_rw_rbv,
@@ -24,7 +24,7 @@ class ImageMode(str, Enum):
     fast_kinetics = "Fast Kinetics"
 
 
-class Andor2Driver(ADBase):
+class Andor2Driver(ADBaseIO):
     """
     Epics pv for andor model:DU897_BV as deployed on p99
     """

@@ -3,19 +3,17 @@ import contextlib
 
 from bluesky.protocols import Flyable, Preparable
 from ophyd_async.core import (
+    AsyncStatus,
     Device,
     WatchableAsyncStatus,
-)
-from ophyd_async.core.async_status import AsyncStatus
-from ophyd_async.core.signal import (
     observe_value,
     soft_signal_rw,
 )
-from ophyd_async.core.utils import (
+from ophyd_async.core._utils import (
     WatcherUpdate,
 )
-from ophyd_async.epics.motion.motor import FlyMotorInfo, MotorLimitsException
-from ophyd_async.sim.demo.sim_motor import SimMotor
+from ophyd_async.epics.motor import FlyMotorInfo, MotorLimitsException
+from ophyd_async.sim.demo._sim_motor import SimMotor
 
 
 class p99SimMotor(SimMotor, Flyable, Preparable):

@@ -8,7 +8,7 @@ from ophyd_async.core import (
     callback_on_mock_put,
     set_mock_value,
 )
-from ophyd_async.epics.areadetector.drivers.ad_base import DetectorState
+from ophyd_async.epics.adcore._core_io import DetectorState
 
 from p99_bluesky.devices.andorAd import Andor2Ad, Andor3Ad
 from p99_bluesky.devices.stages import ThreeAxisStage

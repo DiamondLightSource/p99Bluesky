@@ -239,4 +239,13 @@ async def sim_motor():
     set_mock_value(sim_motor.y.motor_done_move, True)
     set_mock_value(sim_motor.y.max_velocity, 10)
 
+    set_mock_value(sim_motor.z.motor_egu, "mm")
+    set_mock_value(sim_motor.z.high_limit_travel, 5.168)
+    set_mock_value(sim_motor.z.low_limit_travel, -5.888)
+    set_mock_value(sim_motor.z.user_readback, 0)
+    set_mock_value(sim_motor.z.motor_egu, "mm")
+    set_mock_value(sim_motor.z.velocity, 2.88)
+    set_mock_value(sim_motor.z.motor_done_move, True)
+    set_mock_value(sim_motor.z.max_velocity, 10)
+
     yield sim_motor

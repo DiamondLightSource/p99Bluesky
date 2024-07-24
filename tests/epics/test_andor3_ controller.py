@@ -5,10 +5,6 @@ from ophyd_async.core import (
     DetectorTrigger,
     DeviceCollector,
 )
-from ophyd_async.epics.areadetector.controllers import (
-    ADSimController,
-)
-from ophyd_async.epics.areadetector.drivers import ADBase
 
 from p99_bluesky.devices.epics.andor3_controller import Andor3Controller
 from p99_bluesky.devices.epics.drivers.andor3_driver import (
@@ -27,17 +23,8 @@ async def Andor(RE) -> Andor3Controller:
     return controller
 
 
-@pytest.fixture
-async def ad(RE) -> ADSimController:
-    async with DeviceCollector(mock=True):
-        drv = ADBase("DRIVER:")
-        controller = ADSimController(drv)
-
-    return controller
-
-
 async def test_Andor3_controller(RE, Andor: Andor3Controller):
-    with patch("ophyd_async.core.signal.wait_for_value", return_value=None):
+    with patch("ophyd_async.core.wait_for_value", return_value=None):
         await Andor.arm(num=1, exposure=0.002, trigger=DetectorTrigger.internal)
 
     driver = Andor.driver
@@ -49,7 +36,7 @@ async def test_Andor3_controller(RE, Andor: Andor3Controller):
     assert await driver.acquire_time.get_value() == 0.002
     assert Andor.get_deadtime(2) == 2 + 0.2
 
-    with patch("ophyd_async.epics.areadetector.utils.wait_for_value", return_value=None):
+    with patch("ophyd_async.core.wait_for_value", return_value=None):
         await Andor.disarm()
 
     assert await driver.acquire.get_value() is False

@@ -3,14 +3,18 @@ from collections.abc import Callable
 
 from bluesky.protocols import Movable, Stoppable
 from ophyd_async.core import (
+    AsyncStatus,
     ConfigSignal,
     Device,
     HintedSignal,
+    SignalR,
     StandardReadable,
+    T,
     WatchableAsyncStatus,
+    observe_value,
+    wait_for_value,
 )
-from ophyd_async.core.signal import AsyncStatus, SignalR, T, observe_value, wait_for_value
-from ophyd_async.core.utils import (
+from ophyd_async.core._utils import (
     DEFAULT_TIMEOUT,
     CalculatableTimeout,
     CalculateTimeout,
