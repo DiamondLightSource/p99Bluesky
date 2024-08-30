@@ -22,6 +22,11 @@ TRIGGER_MODE = {
 
 
 class Andor3Controller(DetectorControl):
+    """
+    Andor 3 controller
+
+    """
+
     def __init__(
         self,
         driver: Andor3Driver,
@@ -33,6 +38,10 @@ class Andor3Controller(DetectorControl):
         self.good_states = good_states
 
     def get_deadtime(self, exposure: float) -> float:
+        """
+        Get dead time from exposure
+
+        """
         return exposure + 0.2
 
     async def arm(
@@ -41,6 +50,8 @@ class Andor3Controller(DetectorControl):
         trigger: DetectorTrigger = DetectorTrigger.internal,
         exposure: float | None = None,
     ) -> AsyncStatus:
+        """Arming detector"""
+
         funcs = [
             self.driver.num_images.set(999_999 if num == 0 else num),
             self.driver.image_mode.set(ImageMode.fixed),
@@ -55,4 +66,5 @@ class Andor3Controller(DetectorControl):
         )
 
     async def disarm(self):
+        """Disarming detector"""
         await stop_busy_record(self.driver.acquire, False, timeout=1)

@@ -46,6 +46,7 @@ dev = [
     "sphinx-autobuild",
     "sphinx-copybutton",
     "sphinx-design",
+    "autodoc-pydantic",
     "sphinxcontrib-mermaid",
     "sphinxcontrib-openapi",
     "sphinx-click",

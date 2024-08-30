@@ -4,13 +4,28 @@ from bluesky.protocols import Hints
 from ophyd_async.core import PathProvider, SignalR, StandardDetector
 from ophyd_async.epics.adcore import ADBaseShapeProvider, ADHDFWriter, NDFileHDFIO
 
-from p99_bluesky.devices.epics.andor2_controller import Andor2Controller
-from p99_bluesky.devices.epics.andor3_controller import Andor3Controller
-from p99_bluesky.devices.epics.drivers.andor2_driver import Andor2Driver
-from p99_bluesky.devices.epics.drivers.andor3_driver import Andor3Driver
+from p99_bluesky.devices.epics import Andor2Controller, Andor3Controller
+from p99_bluesky.devices.epics.drivers import Andor2Driver, Andor3Driver
 
 
 class Andor2Ad(StandardDetector):
+    """
+    Andor 2 area detector device
+
+    Parameters
+    ----------
+    prefix: str
+        Epic Pv,
+    path_provider: PathProvider
+        Path provider for hdf writer
+    name: str
+        Name of the device
+    config_sigs: Sequence[SignalR]
+        optional config signal to be added
+    **scalar_sigs: str
+        Optional scalar signals
+    """
+
     _controller: Andor2Controller
     _writer: ADHDFWriter
 
@@ -45,6 +60,11 @@ class Andor2Ad(StandardDetector):
 
 
 class Andor3Ad(StandardDetector):
+    """
+    Andor 3 area detector device
+
+    """
+
     _controller: Andor3Controller
     _writer: ADHDFWriter
 
@@ -56,6 +76,19 @@ class Andor3Ad(StandardDetector):
         config_sigs: Sequence[SignalR] = (),
         **scalar_sigs: str,
     ):
+        """Parameters
+        ----------
+        prefix: str
+            Epic Pv,
+        path_provider: PathProvider
+            Path provider for hdf writer
+        name: str
+            Name of the device
+        config_sigs: Sequence[SignalR]
+            optional config signal to be added
+        **scalar_sigs: str
+            Optional scalar signals
+        """
         self.drv = Andor3Driver(prefix + "CAM:")
         self.hdf = NDFileHDFIO(prefix + "HDF5:")
         self.counter = 0

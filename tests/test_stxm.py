@@ -61,7 +61,7 @@ async def test_stxm_fast_zero_velocity_fail(
             ),
             capture_emitted,
         )
-    # should do nothing
+    # should do nothingdocs = defaultdict(list)
     assert_emitted(docs)
 
 

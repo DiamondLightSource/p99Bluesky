@@ -68,3 +68,7 @@ lockfiles/
 
 # ruff cache
 .ruff_cache/
+# generated docs
+docs/generated
+docs/savefig
+

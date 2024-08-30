@@ -22,6 +22,11 @@ TRIGGER_MODE = {
 
 
 class Andor2Controller(DetectorControl):
+    """
+    Andor 2 controller
+
+    """
+
     def __init__(
         self,
         driver: Andor2Driver,
