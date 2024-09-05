@@ -37,11 +37,13 @@ class Andor3Controller(DetectorControl):
         self.driver = driver
         self.good_states = good_states
 
-    def get_deadtime(self, exposure: float) -> float:
+    def get_deadtime(self, exposure: float | None) -> float:
         """
         Get dead time from exposure
 
         """
+        if exposure is None:
+            return 0.2
         return exposure + 0.2
 
     async def arm(
