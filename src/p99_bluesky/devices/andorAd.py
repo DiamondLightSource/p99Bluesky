@@ -2,7 +2,7 @@ from collections.abc import Sequence
 
 from bluesky.protocols import Hints
 from ophyd_async.core import PathProvider, SignalR, StandardDetector
-from ophyd_async.epics.adcore import ADBaseShapeProvider, ADHDFWriter, NDFileHDFIO
+from ophyd_async.epics.adcore import ADBaseDatasetDescriber, ADHDFWriter, NDFileHDFIO
 
 from p99_bluesky.devices.epics import Andor2Controller, Andor3Controller
 from p99_bluesky.devices.epics.drivers import Andor2Driver, Andor3Driver
@@ -45,10 +45,10 @@ class Andor2Ad(StandardDetector):
                 self.hdf,
                 path_provider,
                 lambda: self.name,
-                ADBaseShapeProvider(self.drv),
+                ADBaseDatasetDescriber(self.drv),
                 # sum="StatsTotal",
                 # more="morestuff",
-                **scalar_sigs,
+                # **scalar_sigs,
             ),
             config_sigs=[self.drv.acquire_time, self.drv.stat_mean],
             name=name,
@@ -99,7 +99,7 @@ class Andor3Ad(StandardDetector):
                 self.hdf,
                 path_provider,
                 lambda: self.name,
-                ADBaseShapeProvider(self.drv),
+                ADBaseDatasetDescriber(self.drv),
                 # sum="StatsTotal",
                 **scalar_sigs,
             ),

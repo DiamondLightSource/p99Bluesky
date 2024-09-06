@@ -15,7 +15,7 @@ dependencies = [
     #Things that are neeeded for running
     "blueapi",
     "ophyd",
-    "dls-dodal==1.25.0",
+    "dls-dodal",
     "ophyd-async",
     "bluesky",
 
