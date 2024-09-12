@@ -1,6 +1,7 @@
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from bluesky.utils import Msg, short_uid
+from dodal.common import MsgGenerator
 from ophyd_async.core import DetectorTrigger, TriggerInfo
 
 from p99_bluesky.devices.andorAd import Andor2Ad, Andor3Ad
@@ -11,7 +12,7 @@ def takeImg(
     exposure: float,
     n_img: int = 1,
     det_trig: DetectorTrigger = DetectorTrigger.internal,
-):
+) -> MsgGenerator:
     """
     Bare minimum to take an image using prepare plan with full detector control
     e.g. Able to change tigger_info unlike tigger
@@ -40,7 +41,7 @@ def takeImg(
     return (yield from innerTakeImg())
 
 
-def tiggerImg(dets: Andor2Ad | Andor3Ad, value: int):
+def tiggerImg(dets: Andor2Ad | Andor3Ad, value: int) -> MsgGenerator:
     yield Msg("set", dets.drv.acquire_time, value)
 
     @bpp.stage_decorator([dets])

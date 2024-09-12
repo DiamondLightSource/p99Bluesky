@@ -24,6 +24,19 @@ class ImageMode(str, Enum):
     fast_kinetics = "Fast Kinetics"
 
 
+class ADBaseDataType(str, Enum):
+    UInt16 = "UInt16"
+    UInt32 = "UInt32"
+    b1 = ""
+    b2 = ""
+    b3 = ""
+    b4 = ""
+    b5 = ""
+    b6 = ""
+    Float32 = "Float32"
+    Float64 = "Float64"
+
+
 class Andor2Driver(ADBaseIO):
     """
     Epics pv for andor model:DU897_BV as deployed on p99
@@ -32,8 +45,9 @@ class Andor2Driver(ADBaseIO):
     def __init__(self, prefix: str) -> None:
         super().__init__(prefix)
         self.trigger_mode = epics_signal_rw(TriggerMode, prefix + "TriggerMode")
+        self.data_type = epics_signal_r(ADBaseDataType, prefix + "DataType_RBV")
         self.accumulate_period = epics_signal_r(
             float, prefix + "AndorAccumulatePeriod_RBV"
         )
         self.image_mode = epics_signal_rw_rbv(ImageMode, prefix + "ImageMode")
-        self.stat_mean = epics_signal_r(int, prefix + "STAT:MeanValue_RBV")
+        # self.stat_mean = epics_signal_r(int, prefix + "STAT:MeanValue_RBV")
