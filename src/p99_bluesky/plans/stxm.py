@@ -1,6 +1,7 @@
-import bluesky.plan_stubs as bps
+from collections.abc import Callable
 
-# from blueapi.core import MsgGenerator
+import bluesky.plan_stubs as bps
+from blueapi.core import MsgGenerator
 from bluesky.plans import grid_scan
 from bluesky.preprocessors import (
     finalize_wrapper,
@@ -31,9 +32,9 @@ def stxm_step(
     y_step_size: float,
     home: bool = False,
     snake: bool = False,
-    per_step=None,
-    md=None,
-):  # -> MsgGenerator:
+    per_step: Callable | None = None,
+    md: dict | None = None,
+) -> MsgGenerator:
     """Effectively the standard Bluesky grid scan adapted to use step size.
      Added a centre option where it will move back to
       where it was before scan start.
@@ -127,8 +128,8 @@ def stxm_fast(
     step_size: float | None = None,
     home: bool = False,
     snake_axes: bool = True,
-    md=None,
-):  # -> MsgGenerator:
+    md: dict | None = None,
+) -> MsgGenerator:
     """
     This initiates an STXM scan, targeting a maximum scan speed of around 10Hz.
      It calculates the number of data points achievable based on the detector's count

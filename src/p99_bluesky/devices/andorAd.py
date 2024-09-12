@@ -50,7 +50,7 @@ class Andor2Ad(StandardDetector):
                 # more="morestuff",
                 # **scalar_sigs,
             ),
-            config_sigs=[self.drv.acquire_time, self.drv.stat_mean],
+            config_sigs=[self.drv.acquire_time],
             name=name,
         )
 

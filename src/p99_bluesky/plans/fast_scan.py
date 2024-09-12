@@ -2,11 +2,11 @@ from typing import Any
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
+from blueapi.core import MsgGenerator
 from bluesky.preprocessors import (
     finalize_wrapper,
 )
 from bluesky.utils import short_uid
-from dodal.common import MsgGenerator
 from numpy import linspace
 from ophyd_async.epics.motor import FlyMotorInfo, Motor
 
@@ -68,7 +68,7 @@ def fast_scan_grid(
     scan_end: float,
     motor_speed: float | None = None,
     snake_axes: bool = False,
-    md=None,
+    md: dict | None = None,
 ) -> MsgGenerator:
     """
     Same as fast_scan_1d with an extra axis to step through forming a grid.
