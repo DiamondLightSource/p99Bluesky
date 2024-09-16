@@ -1,7 +1,7 @@
+from blueapi.core import MsgGenerator
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from bluesky.utils import Msg, short_uid
-from dodal.common import MsgGenerator
 from ophyd_async.core import DetectorTrigger, TriggerInfo
 
 from p99_bluesky.devices.andorAd import Andor2Ad, Andor3Ad
@@ -38,7 +38,7 @@ def takeImg(
         yield from bps.collect(det, name="primary", return_payload=True)
         yield from bps.complete(det, group=grp, wait=True)
 
-    return (yield from innerTakeImg())
+    yield from innerTakeImg()
 
 
 def tiggerImg(dets: Andor2Ad | Andor3Ad, value: int) -> MsgGenerator:
@@ -49,4 +49,4 @@ def tiggerImg(dets: Andor2Ad | Andor3Ad, value: int) -> MsgGenerator:
     def innerTiggerImg():
         return (yield from bps.trigger_and_read([dets]))
 
-    return (yield from innerTiggerImg())
+    yield from innerTiggerImg()

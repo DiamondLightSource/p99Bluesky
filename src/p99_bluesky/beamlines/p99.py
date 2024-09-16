@@ -9,6 +9,7 @@ from dodal.common.beamlines.beamline_utils import set_beamline as set_utils_beam
 from dodal.common.visit import StaticVisitPathProvider
 from dodal.log import set_beamline as set_log_beamline
 from dodal.utils import get_beamline_name
+from ophyd_async.core import AutoIncrementFilenameProvider, StaticPathProvider
 
 from p99_bluesky.devices import Andor2Ad
 from p99_bluesky.devices.p99.sample_stage import FilterMotor, SampleAngleStage
@@ -80,6 +81,12 @@ def sample_lab_xyz_stage(
     )
 
 
+datapath = StaticPathProvider(
+    filename_provider=AutoIncrementFilenameProvider(base_filename="andor2"),
+    directory_path=get_path_provider(),  # type: ignore
+)
+
+
 def andor2_det(
     wait_for_connection: bool = True, fake_with_ophyd_mock: bool = False
 ) -> Andor2Ad:
@@ -87,7 +94,7 @@ def andor2_det(
         Andor2Ad,
         prefix="-EA-DET-03:",
         name="andor2_det",
-        path_provider=get_path_provider(),
+        path_provider=datapath,
         wait=wait_for_connection,
         fake=fake_with_ophyd_mock,
     )
