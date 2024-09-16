@@ -86,7 +86,7 @@ def stxm_step(
         y_step_motor,
     )
     # Dictionary to store clean up options
-    clean_up_arg = {}
+    clean_up_arg: dict = {}
     clean_up_arg["Home"] = home
     if home:
         # Add move back  positon to origin
@@ -168,7 +168,7 @@ def stxm_fast(
     md=None,
 
     """
-    clean_up_arg = {}
+    clean_up_arg: dict = {}
     clean_up_arg["Home"] = home
     yield from check_within_limit(
         [
@@ -239,7 +239,7 @@ def stxm_fast(
     )
 
 
-def clean_up(**kwargs):
+def clean_up(**kwargs: dict):
     LOGGER.info(f"Clean up: {list(kwargs)}")
     if kwargs["Home"]:
         # move motor back to stored position
