@@ -2,7 +2,6 @@ from pathlib import Path
 
 from dodal.common.beamlines.beamline_utils import (
     device_instantiation,
-    get_path_provider,
     set_path_provider,
 )
 from dodal.common.beamlines.beamline_utils import set_beamline as set_utils_beamline
@@ -83,7 +82,7 @@ def sample_lab_xyz_stage(
 
 datapath = StaticPathProvider(
     filename_provider=AutoIncrementFilenameProvider(base_filename="andor2"),
-    directory_path=get_path_provider(),  # type: ignore
+    directory_path=Path("/dls/p99/data/2024/cm37284-2/processing/writenData"),
 )
 
 
