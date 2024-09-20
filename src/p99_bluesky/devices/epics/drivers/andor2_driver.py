@@ -8,7 +8,7 @@ from ophyd_async.epics.signal import (
 )
 
 
-class TriggerMode(str, Enum):
+class Andor2TriggerMode(str, Enum):
     internal = "Internal"
     ext_trigger = "External"
     ext_start = "External Start"
@@ -37,14 +37,14 @@ class ADBaseDataType(str, Enum):
     Float64 = "Float64"
 
 
-class Andor2Driver(ADBaseIO):
+class Andor2DriverIO(ADBaseIO):
     """
     Epics pv for andor model:DU897_BV as deployed on p99
     """
 
     def __init__(self, prefix: str) -> None:
         super().__init__(prefix)
-        self.trigger_mode = epics_signal_rw(TriggerMode, prefix + "TriggerMode")
+        self.trigger_mode = epics_signal_rw(Andor2TriggerMode, prefix + "TriggerMode")
         self.data_type = epics_signal_r(ADBaseDataType, prefix + "DataType_RBV")
         self.accumulate_period = epics_signal_r(
             float, prefix + "AndorAccumulatePeriod_RBV"

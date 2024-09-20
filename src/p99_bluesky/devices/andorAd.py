@@ -5,7 +5,7 @@ from ophyd_async.core import PathProvider, SignalR, StandardDetector
 from ophyd_async.epics.adcore import ADBaseDatasetDescriber, ADHDFWriter, NDFileHDFIO
 
 from p99_bluesky.devices.epics import Andor2Controller, Andor3Controller
-from p99_bluesky.devices.epics.drivers import Andor2Driver, Andor3Driver
+from p99_bluesky.devices.epics.drivers import Andor2DriverIO, Andor3DriverIO
 
 
 class Andor2Ad(StandardDetector):
@@ -37,7 +37,7 @@ class Andor2Ad(StandardDetector):
         config_sigs: Sequence[SignalR] = (),
         **scalar_sigs: str,
     ):
-        self.drv = Andor2Driver(prefix + "CAM:")
+        self.drv = Andor2DriverIO(prefix + "CAM:")
         self.hdf = NDFileHDFIO(prefix + "HDF5:")
         super().__init__(
             Andor2Controller(self.drv),
@@ -89,7 +89,7 @@ class Andor3Ad(StandardDetector):
         **scalar_sigs: str
             Optional scalar signals
         """
-        self.drv = Andor3Driver(prefix + "CAM:")
+        self.drv = Andor3DriverIO(prefix + "CAM:")
         self.hdf = NDFileHDFIO(prefix + "HDF5:")
         self.counter = 0
 

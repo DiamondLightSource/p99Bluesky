@@ -19,7 +19,7 @@ from ophyd_async.core import (
 )
 from super_state_machine.errors import TransitionError
 
-from p99_bluesky.devices.andorAd import Andor2Ad, Andor3Ad
+from p99_bluesky.devices import Andor2Ad, Andor3Ad
 from p99_bluesky.devices.stages import ThreeAxisStage
 from soft_motor import SoftThreeAxisStage
 
@@ -163,8 +163,8 @@ async def andor2(static_path_provider: StaticPathProvider) -> Andor2Ad:
     async with DeviceCollector(mock=True):
         andor2 = Andor2Ad("p99", static_path_provider, "andor2")
 
-    set_mock_value(andor2._controller.driver.array_size_x, 10)
-    set_mock_value(andor2._controller.driver.array_size_y, 20)
+    set_mock_value(andor2._controller._drv.array_size_x, 10)
+    set_mock_value(andor2._controller._drv.array_size_y, 20)
     set_mock_value(andor2.hdf.file_path_exists, True)
     set_mock_value(andor2.hdf.num_captured, 0)
     set_mock_value(andor2.hdf.file_path, str(static_path_provider._directory_path))
@@ -193,8 +193,8 @@ async def andor3(static_path_provider: StaticPathProvider) -> Andor3Ad:
     async with DeviceCollector(mock=True):
         andor3 = Andor3Ad("p99", static_path_provider, "andor3")
 
-    set_mock_value(andor3._controller.driver.array_size_x, 10)
-    set_mock_value(andor3._controller.driver.array_size_y, 20)
+    set_mock_value(andor3._controller._drv.array_size_x, 10)
+    set_mock_value(andor3._controller._drv.array_size_y, 20)
     set_mock_value(andor3.hdf.file_path_exists, True)
     set_mock_value(andor3.hdf.num_captured, 0)
     set_mock_value(andor3.hdf.file_path, str(static_path_provider._directory_path))

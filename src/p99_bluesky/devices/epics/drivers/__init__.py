@@ -1,4 +1,4 @@
-from .andor2_driver import Andor2Driver
-from .andor3_driver import Andor3Driver
+from .andor2_driver import Andor2DriverIO
+from .andor3_driver import Andor3DriverIO
 
-__all__ = ["Andor2Driver", "Andor3Driver"]
+__all__ = ["Andor2DriverIO", "Andor3DriverIO"]

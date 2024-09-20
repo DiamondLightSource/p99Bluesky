@@ -20,6 +20,7 @@ from p99_bluesky.plan_stubs.motor_plan import (
     get_velocity_and_step_size,
 )
 from p99_bluesky.plans.fast_scan import fast_scan_grid
+from p99_bluesky.sim.sim_stages import p99SimMotor
 from p99_bluesky.utility.utility import step_size_to_step_num
 
 
@@ -27,7 +28,7 @@ from p99_bluesky.utility.utility import step_size_to_step_num
 @validate_call(config={"arbitrary_types_allowed": True})
 def grid_scan(
     detectors: list[Readable],
-    *args: float | Motor,
+    *args: float | Motor | p99SimMotor,
     snake_axes: bool | None = None,
     per_step: Callable | None = None,
     md: dict | None = None,
@@ -39,16 +40,16 @@ def grid_scan(
     )
 
 
-@attach_data_session_metadata_decorator()
+# @attach_data_session_metadata_decorator()
 @validate_call(config={"arbitrary_types_allowed": True})
 def stxm_step(
     det: Andor2Ad | Andor3Ad | SingleTriggerDetector,
     count_time: float,
-    x_step_motor: Motor,
+    x_step_motor: Motor | p99SimMotor,
     x_step_start: float,
     x_step_end: float,
     x_step_size: float,
-    y_step_motor: Motor,
+    y_step_motor: Motor | p99SimMotor,
     y_step_start: float,
     y_step_end: float,
     y_step_size: float,
