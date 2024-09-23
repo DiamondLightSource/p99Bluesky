@@ -2,14 +2,13 @@ from typing import Any
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
-
-# from blueapi.core import MsgGenerator
+from blueapi.core import MsgGenerator
 from bluesky.preprocessors import (
     finalize_wrapper,
 )
 from bluesky.utils import short_uid
 from numpy import linspace
-from ophyd_async.epics.motion.motor import FlyMotorInfo, Motor
+from ophyd_async.epics.motor import FlyMotorInfo, Motor
 
 from p99_bluesky.log import LOGGER
 from p99_bluesky.plan_stubs.motor_plan import check_within_limit
@@ -21,7 +20,7 @@ def fast_scan_1d(
     start: float,
     end: float,
     motor_speed: float | None = None,
-):  # -> MsgGenerator:
+) -> MsgGenerator:
     """
     One axis fast scan, using _fast_scan_1d.
 
@@ -69,8 +68,8 @@ def fast_scan_grid(
     scan_end: float,
     motor_speed: float | None = None,
     snake_axes: bool = False,
-    md=None,
-):  # -> MsgGenerator:
+    md: dict | None = None,
+) -> MsgGenerator:
     """
     Same as fast_scan_1d with an extra axis to step through forming a grid.
 
@@ -171,7 +170,7 @@ def _fast_scan_1d(
     start: float,
     end: float,
     motor_speed: float | None = None,
-):  # -> MsgGenerator:
+) -> MsgGenerator:
     """
     The logic for one axis fast scan, used in fast_scan_1d and fast_scan_grid
 
@@ -217,7 +216,7 @@ def _fast_scan_1d(
             motor_speed = yield from bps.rd(motor.velocity)
         LOGGER.info(
             f"Starting 1d fly scan with {motor.name}:"
-            + f" start position = {start}, end position({end})."
+            + f" start position = {start}, end position = {end}."
         )
         grp = short_uid("prepare")
         fly_info = FlyMotorInfo(
@@ -230,7 +229,7 @@ def _fast_scan_1d(
         yield from bps.kickoff(motor, group=grp, wait=True)
 
         done = yield from bps.complete(motor)
-        LOGGER.info(f"flying motor =  {motor.name} at speed =({motor_speed})")
+        LOGGER.info(f"flying motor =  {motor.name} at speed = {motor_speed}")
         while not done.done:
             yield from bps.trigger_and_read(dets + [motor])
             yield from bps.checkpoint()

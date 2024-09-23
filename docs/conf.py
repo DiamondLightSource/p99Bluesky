@@ -30,8 +30,13 @@ else:
     version = release
 
 extensions = [
+    # for diagrams
+    "sphinxcontrib.mermaid",
+    # Used for BaseModel autodoc
+    "sphinxcontrib.autodoc_pydantic",
     # Use this for generating API docs
     "sphinx.ext.autodoc",
+    "sphinx.ext.doctest",
     # This can parse google style docstrings
     "sphinx.ext.napoleon",
     # For linking to external sphinx documentation
@@ -44,12 +49,14 @@ extensions = [
     "sphinx_copybutton",
     # For the card element
     "sphinx_design",
-    # So we can write markdown files
+    "sphinx.ext.autosummary",
+    "sphinx.ext.mathjax",
+    "sphinx.ext.githubpages",
+    "IPython.sphinxext.ipython_directive",
+    "IPython.sphinxext.ipython_console_highlighting",
+    "matplotlib.sphinxext.plot_directive",
     "myst_parser",
-    # OpenAPI directive
-    "sphinxcontrib.openapi",
-    # For documenting the CLI
-    "sphinx_click.ext",
+    "numpydoc",
 ]
 
 # So we can use the ::: syntax
@@ -184,3 +191,7 @@ html_show_copyright = False
 # Logo
 html_logo = "images/dls-logo.svg"
 html_favicon = html_logo
+
+
+# Add any paths that contain templates here, relative to this directory.
+templates_path = ["_templates"]

@@ -4,7 +4,7 @@ import pytest
 from ophyd_async.core import (
     DeviceCollector,
 )
-from ophyd_async.epics.motion.motor import MotorLimitsException
+from ophyd_async.epics.motor import MotorLimitsException
 
 from p99_bluesky.sim.sim_stages import SimThreeAxisStage
 

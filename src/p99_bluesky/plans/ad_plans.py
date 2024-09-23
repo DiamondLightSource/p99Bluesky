@@ -1,3 +1,4 @@
+from blueapi.core import MsgGenerator
 from bluesky import plan_stubs as bps
 from bluesky import preprocessors as bpp
 from bluesky.utils import Msg, short_uid
@@ -11,7 +12,7 @@ def takeImg(
     exposure: float,
     n_img: int = 1,
     det_trig: DetectorTrigger = DetectorTrigger.internal,
-):
+) -> MsgGenerator:
     """
     Bare minimum to take an image using prepare plan with full detector control
     e.g. Able to change tigger_info unlike tigger
@@ -29,18 +30,13 @@ def takeImg(
     @bpp.stage_decorator([det])
     @bpp.run_decorator()
     def innerTakeImg():
-        yield from bps.declare_stream(det, name="primary")
-
         yield from bps.prepare(det, tigger_info, group=grp, wait=True)
-        yield from bps.kickoff(det, group=grp, wait=True)
+        yield from bps.trigger_and_read([det])
 
-        yield from bps.collect(det, name="primary", return_payload=True)
-        yield from bps.complete(det, group=grp, wait=True)
-
-    return (yield from innerTakeImg())
+    yield from innerTakeImg()
 
 
-def tiggerImg(dets: Andor2Ad | Andor3Ad, value: int):
+def tiggerImg(dets: Andor2Ad | Andor3Ad, value: int) -> MsgGenerator:
     yield Msg("set", dets.drv.acquire_time, value)
 
     @bpp.stage_decorator([dets])
@@ -48,4 +44,4 @@ def tiggerImg(dets: Andor2Ad | Andor3Ad, value: int):
     def innerTiggerImg():
         return (yield from bps.trigger_and_read([dets]))
 
-    return (yield from innerTiggerImg())
+    yield from innerTiggerImg()

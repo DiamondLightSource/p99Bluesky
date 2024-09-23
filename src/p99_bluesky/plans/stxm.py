@@ -1,11 +1,14 @@
-import bluesky.plan_stubs as bps
+from collections.abc import Callable
 
-# from blueapi.core import MsgGenerator
-from bluesky.plans import grid_scan
+import bluesky.plan_stubs as bps
+import bluesky.plans as bp
+from blueapi.core import MsgGenerator
 from bluesky.preprocessors import (
     finalize_wrapper,
 )
-from ophyd_async.epics.motion import Motor
+from bluesky.protocols import Readable
+from ophyd_async.epics.adcore import SingleTriggerDetector
+from ophyd_async.epics.motor import Motor
 
 from p99_bluesky.devices.andorAd import Andor2Ad, Andor3Ad
 from p99_bluesky.log import LOGGER
@@ -15,25 +18,42 @@ from p99_bluesky.plan_stubs.motor_plan import (
     get_velocity_and_step_size,
 )
 from p99_bluesky.plans.fast_scan import fast_scan_grid
+from p99_bluesky.sim.sim_stages import p99SimMotor
 from p99_bluesky.utility.utility import step_size_to_step_num
 
 
+# @attach_data_session_metadata_decorator()
+# @validate_call(config={"arbitrary_types_allowed": True})
+def grid_scan(
+    detectors: list[Readable],
+    *args: float | Motor | p99SimMotor,
+    snake_axes: bool | None = None,
+    per_step: Callable | None = None,
+    md: dict | None = None,
+) -> MsgGenerator:
+    return (
+        yield from bp.grid_scan(
+            detectors, *args, snake_axes=snake_axes, per_step=per_step, md=md
+        )
+    )
+
+
 def stxm_step(
-    det: Andor2Ad | Andor3Ad,
+    det: Andor2Ad | Andor3Ad | SingleTriggerDetector,
     count_time: float,
-    x_step_motor: Motor,
+    x_step_motor: Motor | p99SimMotor,
     x_step_start: float,
     x_step_end: float,
     x_step_size: float,
-    y_step_motor: Motor,
+    y_step_motor: Motor | p99SimMotor,
     y_step_start: float,
     y_step_end: float,
     y_step_size: float,
     home: bool = False,
     snake: bool = False,
-    per_step=None,
-    md=None,
-):  # -> MsgGenerator:
+    per_step: Callable | None = None,
+    md: dict | None = None,
+) -> MsgGenerator:
     """Effectively the standard Bluesky grid scan adapted to use step size.
      Added a centre option where it will move back to
       where it was before scan start.
@@ -85,7 +105,7 @@ def stxm_step(
         y_step_motor,
     )
     # Dictionary to store clean up options
-    clean_up_arg = {}
+    clean_up_arg: dict = {}
     clean_up_arg["Home"] = home
     if home:
         # Add move back  positon to origin
@@ -115,7 +135,7 @@ def stxm_step(
 
 
 def stxm_fast(
-    det: Andor2Ad | Andor3Ad,
+    det: Andor2Ad | Andor3Ad | SingleTriggerDetector,
     count_time: float,
     step_motor: Motor,
     step_start: float,
@@ -127,8 +147,8 @@ def stxm_fast(
     step_size: float | None = None,
     home: bool = False,
     snake_axes: bool = True,
-    md=None,
-):  # -> MsgGenerator:
+    md: dict | None = None,
+) -> MsgGenerator:
     """
     This initiates an STXM scan, targeting a maximum scan speed of around 10Hz.
      It calculates the number of data points achievable based on the detector's count
@@ -167,7 +187,7 @@ def stxm_fast(
     md=None,
 
     """
-    clean_up_arg = {}
+    clean_up_arg: dict = {}
     clean_up_arg["Home"] = home
     yield from check_within_limit(
         [
@@ -238,7 +258,7 @@ def stxm_fast(
     )
 
 
-def clean_up(**kwargs):
+def clean_up(**kwargs: dict):
     LOGGER.info(f"Clean up: {list(kwargs)}")
     if kwargs["Home"]:
         # move motor back to stored position

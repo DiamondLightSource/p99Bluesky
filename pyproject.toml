@@ -15,8 +15,8 @@ dependencies = [
     #Things that are neeeded for running
     "blueapi",
     "ophyd",
-    "dls-dodal==1.25.0",
-    "ophyd-async <=0.4.0",
+    "dls-dodal",
+    "ophyd-async",
     "bluesky",
 
 
@@ -46,6 +46,7 @@ dev = [
     "sphinx-autobuild",
     "sphinx-copybutton",
     "sphinx-design",
+    "autodoc-pydantic",
     "sphinxcontrib-mermaid",
     "sphinxcontrib-openapi",
     "sphinx-click",

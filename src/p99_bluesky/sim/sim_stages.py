@@ -3,19 +3,17 @@ import contextlib
 
 from bluesky.protocols import Flyable, Preparable
 from ophyd_async.core import (
+    AsyncStatus,
     Device,
     WatchableAsyncStatus,
-)
-from ophyd_async.core.async_status import AsyncStatus
-from ophyd_async.core.signal import (
     observe_value,
     soft_signal_rw,
 )
-from ophyd_async.core.utils import (
+from ophyd_async.core._utils import (
     WatcherUpdate,
 )
-from ophyd_async.epics.motion.motor import FlyMotorInfo, MotorLimitsException
-from ophyd_async.sim.demo.sim_motor import SimMotor
+from ophyd_async.epics.motor import FlyMotorInfo, MotorLimitsException
+from ophyd_async.sim.demo._sim_motor import SimMotor
 
 
 class p99SimMotor(SimMotor, Flyable, Preparable):
@@ -62,9 +60,7 @@ class p99SimMotor(SimMotor, Flyable, Preparable):
             self._fly_completed_position
         ), "Motor must be prepared before attempting to kickoff"
 
-        self._fly_status = self.set(
-            self._fly_completed_position, timeout=self._fly_timeout
-        )
+        self._fly_status = self.set(self._fly_completed_position)
 
     def complete(self) -> WatchableAsyncStatus:
         """Mark as complete once motor reaches completed position."""
@@ -116,7 +112,7 @@ class p99SimMotor(SimMotor, Flyable, Preparable):
         return fly_prepared_position
 
     @WatchableAsyncStatus.wrap
-    async def set(self, new_position: float, timeout=None):
+    async def set(self, value: float):
         """
         Asynchronously move the motor to a new position.
         """
@@ -128,8 +124,8 @@ class p99SimMotor(SimMotor, Flyable, Preparable):
             self.velocity.get_value(),
         )
         # If zero velocity, do instant move
-        move_time = abs(new_position - old_position) / velocity if velocity else 0
-        self._move_status = AsyncStatus(self._move(old_position, new_position, move_time))
+        move_time = abs(value - old_position) / velocity if velocity else 0
+        self._move_status = AsyncStatus(self._move(old_position, value, move_time))
         # If stop is called then this will raise a CancelledError, ignore it
         with contextlib.suppress(asyncio.CancelledError):
             async for current_position in observe_value(
@@ -138,7 +134,7 @@ class p99SimMotor(SimMotor, Flyable, Preparable):
                 yield WatcherUpdate(
                     current=current_position,
                     initial=old_position,
-                    target=new_position,
+                    target=value,
                     name=self.name,
                     unit=units,
                 )

@@ -61,7 +61,7 @@ async def test_stxm_fast_zero_velocity_fail(
             ),
             capture_emitted,
         )
-    # should do nothing
+    # should do nothingdocs = defaultdict(list)
     assert_emitted(docs)
 
 
@@ -157,7 +157,7 @@ async def test_stxm_fast_unknown_step(
 
 
 async def test_stxm_step_with_home(
-    RE: RunEngine, sim_motor_step: ThreeAxisStage, andor2: Andor2Ad
+    RE: RunEngine, sim_motor_step: SimThreeAxisStage, andor2: Andor2Ad
 ):
     docs = defaultdict(list)
 

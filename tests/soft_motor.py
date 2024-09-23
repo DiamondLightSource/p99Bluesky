@@ -3,17 +3,21 @@ from collections.abc import Callable
 
 from bluesky.protocols import Movable, Stoppable
 from ophyd_async.core import (
+    CALCULATE_TIMEOUT,
+    AsyncStatus,
     ConfigSignal,
     Device,
     HintedSignal,
+    SignalR,
     StandardReadable,
+    T,
     WatchableAsyncStatus,
+    observe_value,
+    wait_for_value,
 )
-from ophyd_async.core.signal import AsyncStatus, SignalR, T, observe_value, wait_for_value
-from ophyd_async.core.utils import (
+from ophyd_async.core._utils import (
     DEFAULT_TIMEOUT,
     CalculatableTimeout,
-    CalculateTimeout,
     WatcherUpdate,
 )
 from ophyd_async.epics.signal import epics_signal_r, epics_signal_rw, epics_signal_x
@@ -49,7 +53,7 @@ class FlyMotorInfo(BaseModel):
 
     #: Maximum time for the complete motor move, including run up and run down.
     #: Defaults to `time_for_move` + run up and run down times + 10s.
-    timeout: CalculatableTimeout = Field(frozen=True, default=CalculateTimeout)
+    timeout: CalculatableTimeout = Field(frozen=True, default=CALCULATE_TIMEOUT)
 
 
 class SoftThreeAxisStage(Device):
@@ -121,7 +125,7 @@ class SoftMotor(StandardReadable, Movable, Stoppable):
         self._fly_status: WatchableAsyncStatus | None = None
 
         # Set during prepare
-        self._fly_timeout: CalculatableTimeout | None = CalculateTimeout
+        self._fly_timeout: CalculatableTimeout | None = CALCULATE_TIMEOUT
 
         super().__init__(name=name)
 
@@ -179,7 +183,7 @@ class SoftMotor(StandardReadable, Movable, Stoppable):
         return self._fly_status
 
     @WatchableAsyncStatus.wrap
-    async def set(self, value: float, timeout: CalculatableTimeout = CalculateTimeout):
+    async def set(self, value: float, timeout: CalculatableTimeout = CALCULATE_TIMEOUT):
         self._set_success = True
         (
             old_position,
@@ -194,7 +198,7 @@ class SoftMotor(StandardReadable, Movable, Stoppable):
             self.velocity.get_value(),
             self.acceleration_time.get_value(),
         )
-        if timeout is CalculateTimeout:
+        if timeout is CALCULATE_TIMEOUT:
             assert velocity > 0, "Motor has zero velocity"
             timeout = (
                 abs(value - old_position) / velocity
