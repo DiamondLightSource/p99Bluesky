@@ -37,6 +37,13 @@ async def test_Andor_controller(RE, Andor: Andor2Controller):
     assert await driver.trigger_mode.get_value() == Andor2TriggerMode.internal
     assert await driver.acquire.get_value() is True
     assert await driver.acquire_time.get_value() == 0.002
+    assert Andor.get_deadtime(2) == 2 + 0.1
+    assert Andor.get_deadtime(0) == 0.1
+
+    with patch("ophyd_async.core.wait_for_value", return_value=None):
+        await Andor.disarm()
+
+    assert await driver.acquire.get_value() is False
 
     with patch("ophyd_async.core.wait_for_value", return_value=None):
         await Andor.disarm()
