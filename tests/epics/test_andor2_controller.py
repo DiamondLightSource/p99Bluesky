@@ -2,6 +2,7 @@ from unittest.mock import patch
 
 import pytest
 from ophyd_async.core import (
+    DetectorTrigger,
     DeviceCollector,
     TriggerInfo,
     set_mock_value,
@@ -47,5 +48,7 @@ async def test_Andor_controller(RE, Andor: Andor2Controller):
 
     with patch("ophyd_async.core.wait_for_value", return_value=None):
         await Andor.disarm()
+    with pytest.raises(ValueError):
+        Andor._get_trigger_mode(DetectorTrigger.edge_trigger)
 
     assert await driver.acquire.get_value() is False
