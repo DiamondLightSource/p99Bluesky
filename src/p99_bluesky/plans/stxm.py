@@ -7,10 +7,8 @@ from bluesky.preprocessors import (
     finalize_wrapper,
 )
 from bluesky.protocols import Readable
-from dodal.plans.data_session_metadata import attach_data_session_metadata_decorator
 from ophyd_async.epics.adcore import SingleTriggerDetector
 from ophyd_async.epics.motor import Motor
-from pydantic import validate_call
 
 from p99_bluesky.devices.andorAd import Andor2Ad, Andor3Ad
 from p99_bluesky.log import LOGGER
@@ -24,8 +22,8 @@ from p99_bluesky.sim.sim_stages import p99SimMotor
 from p99_bluesky.utility.utility import step_size_to_step_num
 
 
-@attach_data_session_metadata_decorator()
-@validate_call(config={"arbitrary_types_allowed": True})
+# @attach_data_session_metadata_decorator()
+# @validate_call(config={"arbitrary_types_allowed": True})
 def grid_scan(
     detectors: list[Readable],
     *args: float | Motor | p99SimMotor,
@@ -40,8 +38,6 @@ def grid_scan(
     )
 
 
-# @attach_data_session_metadata_decorator()
-@validate_call(config={"arbitrary_types_allowed": True})
 def stxm_step(
     det: Andor2Ad | Andor3Ad | SingleTriggerDetector,
     count_time: float,

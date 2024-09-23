@@ -16,9 +16,3 @@ This is the internal API reference for p99_bluesky
     :toctree: ../generated
     :template: custom-module-template.rst
     :recursive:
-
-    devices
-    utility
-    sim
-    plans
-    plan_stubs

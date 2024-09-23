@@ -30,13 +30,8 @@ def takeImg(
     @bpp.stage_decorator([det])
     @bpp.run_decorator()
     def innerTakeImg():
-        yield from bps.declare_stream(det, name="primary")
-
         yield from bps.prepare(det, tigger_info, group=grp, wait=True)
-        yield from bps.kickoff(det, group=grp, wait=True)
-
-        yield from bps.collect(det, name="primary", return_payload=True)
-        yield from bps.complete(det, group=grp, wait=True)
+        yield from bps.trigger_and_read([det])
 
     yield from innerTakeImg()
 
