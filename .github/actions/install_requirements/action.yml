@@ -53,7 +53,7 @@ runs:
       continue-on-error: true
       run: |
         gh extension install actions/gh-actions-cache
-        gh actions-cache delete "cache_restore.key" --confirm
+        gh actions-cache delete "${{cache_restore.key}}" --confirm
       env:
         GITHUB_TOKEN: ${{ inputs.token }}
       shell: bash
