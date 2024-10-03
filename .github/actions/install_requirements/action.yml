@@ -53,7 +53,7 @@ runs:
       continue-on-error: true
       run: |
         gh extension install actions/gh-actions-cache
-        gh actions-cache delete "venv-${{ runner.os }}-${{ inputs.python-version }}-${{ inputs.workflow-name }}" --confirm
+        gh actions-cache delete "venv-${{ runner.os }}-${{ inputs.python-version }}-${{inputs.workflow-name}}" --confirm
       env:
         GITHUB_TOKEN: ${{ inputs.token }}
       shell: bash
