@@ -41,14 +41,6 @@ runs:
         python -m venv .venv
         source .venv/bin/activate
         python -m pip install ${{ inputs.pip-install }}
-
+        echo "$VIRTUAL_ENV/bin" >> $GITHUB_PATH
+        echo "VIRTUAL_ENV=$VIRTUAL_ENV" >> $GITHUB_ENV
       shell: bash
-
-    - name: Saved cached virtualenv
-      uses: actions/cache/save@v4
-      with:
-        key: venv-${{ runner.os }}-${{ inputs.python-version }}-${{inputs.workflow-name}}-${{ hashFiles(inputs.pip-install) }}
-        path: .venv
-
-        # echo "$VIRTUAL_ENV/bin" >> $GITHUB_PATH
-        # echo "VIRTUAL_ENV=$VIRTUAL_ENV" >> $GITHUB_ENV
