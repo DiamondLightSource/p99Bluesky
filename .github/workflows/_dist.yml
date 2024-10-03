@@ -49,7 +49,7 @@ jobs:
           gh extension install actions/gh-actions-cache
           gh actions-cache delete "venv-${{ runner.os }}-${{ inputs.python-version }}-${{ inputs.workflow-name }}-${{ hashFiles(inputs.pip-install) }}" --confirm
         env:
-          GITHUB_TOKEN: secrets.GITHUB_TOKEN
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
   
       - name: Saved cached virtualenv
