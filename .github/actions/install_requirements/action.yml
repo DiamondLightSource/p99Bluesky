@@ -7,6 +7,9 @@ inputs:
   pip-install:
     description: Parameters to pass to pip install
     default: "$([ -f dev-requirements.txt ] && echo '-c dev-requirements.txt') -e .[dev]"
+  workflow:
+    description: Which workflow started this.
+    default: ""
 
 runs:
   using: composite
@@ -19,16 +22,31 @@ runs:
         fi
         echo "PYTHON_VERSION=$PYTHON_VERSION" >> "$GITHUB_ENV"
       shell: bash
-
+    #Setup python env
     - name: Setup python
+      id: setup_python
       uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-
+        #cache: "pip"
+    #Load caches if match
+    - name: Restore cached virtualenv
+      uses: actions/cache/restore@v4
+      with:
+        key: venv-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ inputs.workflow }}-${{ hashFiles('dev-requirements.txt') }}
+        path: .venv
+    #install missing packages
     - name: Install packages
-      run: pip install ${{ inputs.pip-install }}
+      run: |
+        python -m venv .venv
+        source .venv/bin/activate
+        python -m pip install ${{ inputs.pip-install }}
+        echo "$VIRTUAL_ENV/bin" >> $GITHUB_PATH
+        echo "VIRTUAL_ENV=$VIRTUAL_ENV" >> $GITHUB_ENV
       shell: bash
 
-    - name: Report what was installed
-      run: pip freeze
-      shell: bash
+    - name: Saved cached virtualenv
+      uses: actions/cache/save@v4
+      with:
+        key: venv-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ inputs.workflow }}-${{ hashFiles('dev-requirements.txt') }}
+        path: .venv
