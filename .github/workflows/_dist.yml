@@ -27,7 +27,6 @@ jobs:
         run: pipx run twine check --strict dist/*
 
       - name: Install produced wheel
-        id: inputs
         uses: ./.github/actions/install_requirements
         with:
           pip-install: dist/*.whl
@@ -36,9 +35,3 @@ jobs:
       - name: Test module --version works using the installed wheel
         # If more than one module in src/ replace with module name to test
         run: python -m $(ls --hide='*.egg-info' src | head -1) --version
-      - name: Saved cached virtualenv
-        uses: actions/cache/save@v4
-        with:
-          key: venv-${{ runner.os }}-${{inputs.workflow-name}}-${{ hashFiles(inputs.pip-install) }}
-          path: .venv
-  
