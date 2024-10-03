@@ -61,5 +61,5 @@ runs:
     - name: Saved cached virtualenv
       uses: actions/cache/save@v4
       with:
-        key: ${{cache_restore.key}}
+        key: ${{steps.cache-restore.key}}
         path: .venv
