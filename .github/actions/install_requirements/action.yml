@@ -10,6 +10,8 @@ inputs:
   workflow-name:
     description: Which workflow started this.
     default: "help"
+  token:
+    description: Git token
 
 runs:
   using: composite
@@ -52,7 +54,7 @@ runs:
         gh extension install actions/gh-actions-cache
         gh actions-cache delete "venv-${{ runner.os }}-${{ inputs.python-version }}-${{ inputs.workflow-name }}-${{ hashFiles(inputs.pip-install) }}" --confirm
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ inputs.token }}
       shell: bash
 
     - name: Saved cached virtualenv
