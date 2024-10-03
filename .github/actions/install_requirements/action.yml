@@ -36,7 +36,7 @@ runs:
       id: cache-restore
       uses: actions/cache/restore@v4
       with:
-        key: venv-${{ runner.os }}-${{ inputs.python-version }}-${{ inputs.workflow-name }}-${{ hashFiles(inputs.pip-install) }}
+        key: venv-${{ runner.os }}-${{ inputs.python-version }}-${{ inputs.workflow-name }}
         path: .venv
     #install missing packages
     - name: Install packages
@@ -53,7 +53,7 @@ runs:
       continue-on-error: true
       run: |
         gh extension install actions/gh-actions-cache
-        gh actions-cache delete "${{cache_restore.key}}" --confirm
+        gh actions-cache delete "${{cache-restore.key}}" --confirm
       env:
         GITHUB_TOKEN: ${{ inputs.token }}
       shell: bash
@@ -61,5 +61,5 @@ runs:
     - name: Saved cached virtualenv
       uses: actions/cache/save@v4
       with:
-        key: venv-${{ runner.os }}-${{ inputs.python-version }}-${{inputs.workflow-name}}-${{ hashFiles(inputs.pip-install) }}
+        key: ${{cache_restore.key}}
         path: .venv
