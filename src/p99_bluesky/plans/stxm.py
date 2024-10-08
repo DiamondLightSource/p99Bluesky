@@ -1,12 +1,9 @@
-from collections.abc import Callable
-
 import bluesky.plan_stubs as bps
 import bluesky.plans as bp
 from blueapi.core import MsgGenerator
 from bluesky.preprocessors import (
     finalize_wrapper,
 )
-from bluesky.protocols import Readable
 from ophyd_async.epics.adcore import SingleTriggerDetector
 from ophyd_async.epics.motor import Motor
 
@@ -22,22 +19,6 @@ from p99_bluesky.sim.sim_stages import p99SimMotor
 from p99_bluesky.utility.utility import step_size_to_step_num
 
 
-# @attach_data_session_metadata_decorator()
-# @validate_call(config={"arbitrary_types_allowed": True})
-def grid_scan(
-    detectors: list[Readable],
-    *args: float | Motor | p99SimMotor,
-    snake_axes: bool | None = None,
-    per_step: Callable | None = None,
-    md: dict | None = None,
-) -> MsgGenerator:
-    return (
-        yield from bp.grid_scan(
-            detectors, *args, snake_axes=snake_axes, per_step=per_step, md=md
-        )
-    )
-
-
 def stxm_step(
     det: Andor2Ad | Andor3Ad | SingleTriggerDetector,
     count_time: float,
@@ -51,7 +32,6 @@ def stxm_step(
     y_step_size: float,
     home: bool = False,
     snake: bool = False,
-    per_step: Callable | None = None,
     md: dict | None = None,
 ) -> MsgGenerator:
     """Effectively the standard Bluesky grid scan adapted to use step size.
@@ -84,7 +64,6 @@ def stxm_step(
         If true move back to position before it scan
     snake_axes: bool = True,
         If true, do grid scan without moving scan axis back to start position.
-    per_step:
     md=None,
 
     """
@@ -116,7 +95,7 @@ def stxm_step(
     yield from bps.abs_set(det.drv.acquire_time, count_time)
     # add 1 to step number to include the end point
     yield from finalize_wrapper(
-        plan=grid_scan(
+        plan=bp.grid_scan(
             [det],
             x_step_motor,
             x_step_start,
@@ -127,7 +106,6 @@ def stxm_step(
             y_step_end,
             step_size_to_step_num(y_step_start, y_step_end, y_step_size) + 1,
             snake_axes=snake,
-            per_step=per_step,
             md=md,
         ),
         final_plan=clean_up(**clean_up_arg),
