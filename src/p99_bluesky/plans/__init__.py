@@ -8,4 +8,3 @@ __all__ = [
     "stxm_fast",
     "stxm_step",
 ]
-# the gird scan is bluesky si triggering pydantic error and crashing blueapi

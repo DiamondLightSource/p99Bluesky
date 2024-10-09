@@ -119,7 +119,7 @@ def fast_scan_grid(
         steps = linspace(step_start, step_end, num_step, endpoint=True)
         if snake_axes:
             for cnt, step in enumerate(steps):
-                yield from bps.mv(step_motor, step)
+                yield from bps.abs_set(step_motor, step)
                 if cnt % 2 == 0:
                     yield from _fast_scan_1d(
                         dets + [step_motor], scan_motor, scan_start, scan_end, motor_speed
@@ -130,7 +130,7 @@ def fast_scan_grid(
                     )
         else:
             for step in steps:
-                yield from bps.mv(step_motor, step)
+                yield from bps.abs_set(step_motor, step)
                 yield from _fast_scan_1d(
                     dets + [step_motor], scan_motor, scan_start, scan_end, motor_speed
                 )
@@ -203,7 +203,7 @@ def _fast_scan_1d(
     """
 
     # read the current speed and store it
-    old_speed = yield from bps.rd(motor.velocity)
+    old_speed: float = yield from bps.rd(motor.velocity)
 
     def inner_fast_scan_1d(
         dets: list[Any],
@@ -213,11 +213,13 @@ def _fast_scan_1d(
         motor_speed: float | None = None,
     ):
         if not motor_speed:
-            motor_speed = yield from bps.rd(motor.velocity)
+            motor_speed = old_speed
+
         LOGGER.info(
             f"Starting 1d fly scan with {motor.name}:"
             + f" start position = {start}, end position = {end}."
         )
+
         grp = short_uid("prepare")
         fly_info = FlyMotorInfo(
             start_position=start,
