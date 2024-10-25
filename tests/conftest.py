@@ -1,4 +1,7 @@
 import asyncio
+import subprocess
+import sys
+import time
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -50,6 +53,42 @@ def RE(request):
     return RE
 
 
+@pytest.fixture(scope="module", params=["pva"])
+def pva():
+    processes = [
+        subprocess.Popen(
+            [
+                sys.executable,
+                "-m",
+                "epicscorelibs.ioc",
+                "-m",
+                macros,
+                "-d",
+                RECORD,
+            ],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True,
+        )
+        for macros in [
+            "INCLUDE_EXTRA_BLOCK=,INCLUDE_EXTRA_SIGNAL=",
+            "EXCLUDE_WIDTH=#,IOC_NAME=PANDAQSRVIB",
+            "EXCLUDE_PCAP=#,IOC_NAME=PANDAQSRVI",
+        ]
+    ]
+    time.sleep(2)
+
+    for p in processes:
+        assert not p.poll()  # , p.stdout.read()
+
+    yield processes
+
+    for p in processes:
+        p.terminate()
+        p.communicate()
+
+
 @pytest.fixture
 async def normal_coroutine() -> Callable[[], Any]:
     async def inner_coroutine():
@@ -65,6 +104,29 @@ async def failing_coroutine() -> Callable[[], Any]:
         raise ValueError()
 
     return inner_coroutine
+
+
+A_BIT = 0.5
+
+
+@pytest.fixture(scope="session")
+async def fake_99():
+    p = subprocess.Popen(
+        [
+            "python",
+            "tests/epics/soft_ioc/p99_softioc.py",
+        ],
+    )
+
+    # Give the server time to start
+    await asyncio.sleep(A_BIT)
+    # Check it started successfully
+    print("setup")
+    yield p
+    p.terminate()
+    # Shut it down at the
+    p.wait()
+    await asyncio.sleep(A_BIT)
 
 
 @pytest.fixture(scope="session")
