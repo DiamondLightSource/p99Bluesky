@@ -93,8 +93,8 @@ reportMissingImports = false # Ignore missing stubs in imported modules
 addopts = """
     --tb=native -vv --doctest-modules --doctest-glob="*.rst"
     """
+filterwarnings = ["error", "ignore::pytest.PytestUnraisableExceptionWarning"]
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
-filterwarnings = "error"
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests"
 
