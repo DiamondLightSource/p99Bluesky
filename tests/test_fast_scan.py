@@ -5,7 +5,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from numpy import linspace
 from ophyd.sim import SynPeriodicSignal
-from ophyd_async.core import (
+from ophyd_async.testing import (
     assert_emitted,
     get_mock_put,
 )
@@ -56,9 +56,9 @@ async def test_fast_scan_1d_success(sim_motor: ThreeAxisStage, RE: RunEngine, de
     assert 3 == get_mock_put(sim_motor.x.velocity).call_count
     # check speed is set and reset
     assert [
-        mock.call(10.0, wait=True, timeout=mock.ANY),  # prepare set it to max speed
-        mock.call(8.0, wait=True, timeout=mock.ANY),
-        mock.call(2.78, wait=True, timeout=mock.ANY),
+        mock.call(10.0, wait=True),  # prepare set it to max speed
+        mock.call(8.0, wait=True),
+        mock.call(2.78, wait=True),
     ] == get_mock_put(sim_motor.x.velocity).call_args_list
 
     """Only 1 event as sim motor motor_done_move is set to true,
@@ -81,9 +81,9 @@ async def test_fast_scan_1d_success_without_speed(
     assert 3 == get_mock_put(sim_motor.x.velocity).call_count
     # check speed is set and reset
     assert [
-        mock.call(pytest.approx(10.0), wait=True, timeout=mock.ANY),
-        mock.call(pytest.approx(2.78), wait=True, timeout=mock.ANY),
-        mock.call(pytest.approx(2.78), wait=True, timeout=mock.ANY),
+        mock.call(pytest.approx(10.0), wait=True),
+        mock.call(pytest.approx(2.78), wait=True),
+        mock.call(pytest.approx(2.78), wait=True),
     ] == get_mock_put(sim_motor.x.velocity).call_args_list
 
     """Only 1 event as sim motor motor_done_move is set to true,
@@ -126,7 +126,7 @@ async def test_fast_scan_2d_success(sim_motor: ThreeAxisStage, RE: RunEngine, de
     # check step set points
     steps = linspace(x_start, x_end, num_step, endpoint=True)
     for cnt, motor_x in enumerate(get_mock_put(sim_motor.x.user_setpoint).call_args_list):
-        assert motor_x == mock.call(steps[cnt], wait=True, timeout=mock.ANY)
+        assert motor_x == mock.call(steps[cnt], wait=True)
 
     assert 2.88 == await sim_motor.y.velocity.get_value()
     assert num_step * 3 == get_mock_put(sim_motor.y.velocity).call_count
@@ -134,9 +134,9 @@ async def test_fast_scan_2d_success(sim_motor: ThreeAxisStage, RE: RunEngine, de
     # check scan axis set and end point
     for cnt, motor_y in enumerate(get_mock_put(sim_motor.y.user_setpoint).call_args_list):
         if cnt % 2 == 0:
-            assert motor_y == mock.call(y_start, wait=True, timeout=mock.ANY)
+            assert motor_y == mock.call(y_start, wait=True)
         else:
-            assert motor_y == mock.call(y_end, wait=True, timeout=mock.ANY)
+            assert motor_y == mock.call(y_end, wait=True)
     """Only 1 event per step as sim motor motor_done_move is set to true,
       so only 1 loop is ran"""
     assert_emitted(docs, start=1, descriptor=1, event=num_step, stop=1)
@@ -176,7 +176,7 @@ async def test_fast_scan_2d_Snake_success(sim_motor: ThreeAxisStage, RE: RunEngi
     assert 0 == get_mock_put(sim_motor.x.velocity).call_count
     steps = linspace(x_start, x_end, num_step, endpoint=True)
     for cnt, motor_x in enumerate(get_mock_put(sim_motor.x.user_setpoint).call_args_list):
-        assert motor_x == mock.call(steps[cnt], wait=True, timeout=mock.ANY)
+        assert motor_x == mock.call(steps[cnt], wait=True)
 
     assert 2.88 == await sim_motor.y.velocity.get_value()
     assert num_step * 3 == get_mock_put(sim_motor.y.velocity).call_count
@@ -194,7 +194,7 @@ async def test_fast_scan_2d_Snake_success(sim_motor: ThreeAxisStage, RE: RunEngi
         y_position.append(y_end)
     """check them"""
     for cnt, motor_y in enumerate(get_mock_put(sim_motor.y.user_setpoint).call_args_list):
-        assert motor_y == mock.call(y_position[cnt], wait=True, timeout=mock.ANY)
+        assert motor_y == mock.call(y_position[cnt], wait=True)
 
     """Only 1 event per step as sim motor motor_done_move is set to true,
       so only 1 loop is ran"""

@@ -1,40 +1,34 @@
-from enum import Enum
-
+from ophyd_async.core import StrictEnum
 from ophyd_async.epics.adcore._core_io import ADBaseIO
-from ophyd_async.epics.signal import (
+from ophyd_async.epics.core import (
     epics_signal_r,
     epics_signal_rw,
     epics_signal_rw_rbv,
 )
 
 
-class Andor2TriggerMode(str, Enum):
-    internal = "Internal"
-    ext_trigger = "External"
-    ext_start = "External Start"
-    ext_exposure = "External Exposure"
-    ext_FVP = "External FVP"
-    soft = "Software"
+class Andor2TriggerMode(StrictEnum):
+    INTERNAL = "Internal"
+    EXT_TRIGGER = "External"
+    EXT_START = "External Start"
+    EXT_EXPOSURE = "External Exposure"
+    EXT_FVP = "External FVP"
+    SOFT = "Software"
 
 
-class ImageMode(str, Enum):
-    single = "Single"
-    multiple = "Multiple"
-    continuous = "Continuous"
-    fast_kinetics = "Fast Kinetics"
+class ImageMode(StrictEnum):
+    SINGLE = "Single"
+    MULTIPLE = "Multiple"
+    CONTINUOUS = "Continuous"
+    FAST_KINETICS = "Fast Kinetics"
 
 
-class ADBaseDataType(str, Enum):
-    UInt16 = "UInt16"
-    UInt32 = "UInt32"
-    b1 = ""
-    b2 = ""
-    b3 = ""
-    b4 = ""
-    b5 = ""
-    b6 = ""
-    Float32 = "Float32"
-    Float64 = "Float64"
+class ADBaseDataType(StrictEnum):
+    UINT16 = "UInt16"
+    UINT32 = "UInt32"
+    B1 = ""
+    FLOAT32 = "Float32"
+    FLOAT64 = "Float64"
 
 
 class Andor2DriverIO(ADBaseIO):

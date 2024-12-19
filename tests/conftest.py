@@ -14,9 +14,8 @@ from ophyd_async.core import (
     FilenameProvider,
     StaticFilenameProvider,
     StaticPathProvider,
-    callback_on_mock_put,
-    set_mock_value,
 )
+from ophyd_async.testing import callback_on_mock_put, set_mock_value
 from super_state_machine.errors import TransitionError
 
 from p99_bluesky.devices import Andor2Ad, Andor3Ad

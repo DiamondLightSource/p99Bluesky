@@ -5,9 +5,8 @@ import pytest
 from bluesky.run_engine import RunEngine
 from ophyd_async.core import (
     DeviceCollector,
-    assert_emitted,
-    set_mock_value,
 )
+from ophyd_async.testing import assert_emitted, set_mock_value
 
 from p99_bluesky.devices.andorAd import Andor2Ad, Andor3Ad
 from p99_bluesky.devices.stages import ThreeAxisStage

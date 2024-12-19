@@ -1,7 +1,8 @@
 import pytest
 from bluesky.run_engine import RunEngine
-from ophyd_async.core import DeviceCollector, set_mock_value
+from ophyd_async.core import DeviceCollector
 from ophyd_async.epics.motor import Motor
+from ophyd_async.testing import set_mock_value
 
 from p99_bluesky.plan_stubs.motor_plan import check_within_limit
 

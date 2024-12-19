@@ -5,12 +5,11 @@ from bluesky.protocols import Movable, Stoppable
 from ophyd_async.core import (
     CALCULATE_TIMEOUT,
     AsyncStatus,
-    ConfigSignal,
     Device,
-    HintedSignal,
+    SignalDatatypeT,
     SignalR,
     StandardReadable,
-    T,
+    StandardReadableFormat,
     WatchableAsyncStatus,
     observe_value,
     wait_for_value,
@@ -20,7 +19,7 @@ from ophyd_async.core._utils import (
     CalculatableTimeout,
     WatcherUpdate,
 )
-from ophyd_async.epics.signal import epics_signal_r, epics_signal_rw, epics_signal_x
+from ophyd_async.epics.core import epics_signal_r, epics_signal_rw, epics_signal_x
 from pydantic import BaseModel, Field
 
 
@@ -98,11 +97,11 @@ class SoftMotor(StandardReadable, Movable, Stoppable):
 
     def __init__(self, prefix: str, name="") -> None:
         # Define some signals
-        with self.add_children_as_readables(ConfigSignal):
+        with self.add_children_as_readables(StandardReadableFormat.CONFIG_SIGNAL):
             self.motor_egu = epics_signal_r(str, prefix + ".EGU")
             self.velocity = epics_signal_rw(float, prefix + "VELO")
 
-        with self.add_children_as_readables(HintedSignal):
+        with self.add_children_as_readables(StandardReadableFormat.HINTED_SIGNAL):
             self.user_readback = epics_signal_r(float, prefix + "RBV")
 
         self.user_setpoint = epics_signal_rw(float, prefix + "VAL")
@@ -129,16 +128,16 @@ class SoftMotor(StandardReadable, Movable, Stoppable):
 
         super().__init__(name=name)
 
-    def set_name(self, name: str):
-        super().set_name(name)
+    def set_name(self, name: str, *, child_name_separator: str | None = None) -> None:
+        super().set_name(name, child_name_separator=child_name_separator)
         # Readback should be named the same as its parent in read()
         self.user_readback.set_name(name)
 
     @AsyncStatus.wrap
     async def wait_for_value_with_status(
         self,
-        signal: SignalR[T],
-        match: T | Callable[[T], bool],
+        signal: SignalR[SignalDatatypeT],
+        match: SignalDatatypeT | Callable[[SignalDatatypeT], bool],
         timeout: float | None,
     ):
         """wrap wait for value so it return an asyncStatus"""

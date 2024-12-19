@@ -1,20 +1,19 @@
-from enum import Enum
-
+from ophyd_async.core import StrictEnum
 from ophyd_async.epics.adcore._core_io import ADBaseIO
-from ophyd_async.epics.signal import epics_signal_rw, epics_signal_rw_rbv
+from ophyd_async.epics.core import epics_signal_rw, epics_signal_rw_rbv
 
 
-class Andor3TriggerMode(str, Enum):
-    internal = "Internal"
-    ext_start = "External Start"
-    ext_exposure = "External Exposure"
-    soft = "Software"
-    ext_trigger = "External"
+class Andor3TriggerMode(StrictEnum):
+    INTERNAL = "Internal"
+    EXT_START = "External Start"
+    EXT_EXPOSURE = "External Exposure"
+    SOFT = "Software"
+    EXT_TRIGGER = "External"
 
 
-class ImageMode(str, Enum):
-    fixed = "Fixed"
-    continuous = "Continuous"
+class ImageMode(StrictEnum):
+    FIXED = "Fixed"
+    CONTINUOUS = "Continuous"
 
 
 class Andor3DriverIO(ADBaseIO):
