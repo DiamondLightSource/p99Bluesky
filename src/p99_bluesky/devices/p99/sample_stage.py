@@ -1,7 +1,5 @@
-from enum import Enum
-
-from ophyd_async.core import Device
-from ophyd_async.epics.signal import epics_signal_rw
+from ophyd_async.core import Device, StrictEnum
+from ophyd_async.epics.core import epics_signal_rw
 
 
 class SampleAngleStage(Device):
@@ -16,23 +14,23 @@ class SampleAngleStage(Device):
         super().__init__(name=name)
 
 
-class p99StageSelections(str, Enum):
-    Empty = "Empty"
-    Mn5um = "Mn 5um"
-    Fe = "Fe (empty)"
-    Co5um = "Co 5um"
-    Ni5um = "Ni 5um"
-    Cu5um = "Cu 5um"
-    Zn5um = "Zn 5um"
-    Zr = "Zr (empty)"
-    Mo = "Mo (empty)"
-    Rh = "Rh (empty)"
-    Pd = "Pd (empty)"
-    Ag = "Ag (empty)"
-    Cd25um = "Cd 25um"
-    W = "W (empty)"
-    Pt = "Pt (empty)"
-    User = "User"
+class p99StageSelections(StrictEnum):
+    EMPTY = "EMPTY"
+    MN5UM = "MN 5UM"
+    FE = "FE (EMPTY)"
+    CO5UM = "CO 5UM"
+    NI5UM = "NI 5UM"
+    CU5UM = "CU 5UM"
+    ZN5UM = "ZN 5UM"
+    ZR = "ZR (EMPTY)"
+    MO = "MO (EMPTY)"
+    RH = "RH (EMPTY)"
+    PD = "PD (EMPTY)"
+    AG = "AG (EMPTY)"
+    CD25UM = "CD 25UM"
+    W = "W (EMPTY)"
+    PT = "PT (EMPTY)"
+    USER = "USER"
 
 
 class FilterMotor(Device):

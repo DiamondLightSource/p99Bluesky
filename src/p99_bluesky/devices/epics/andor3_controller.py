@@ -1,7 +1,7 @@
 import asyncio
 
 from ophyd_async.core import (
-    DetectorControl,
+    DetectorController,
     DetectorTrigger,
 )
 from ophyd_async.core._detector import TriggerInfo
@@ -19,16 +19,16 @@ from p99_bluesky.devices.epics.drivers.andor3_driver import (
 )
 
 
-class Andor3Controller(DetectorControl):
+class Andor3Controller(DetectorController):
     """
     Andor 3 controller
 
     """
 
     _supported_trigger_types = {
-        DetectorTrigger.internal: Andor3TriggerMode.internal,
-        DetectorTrigger.constant_gate: Andor3TriggerMode.ext_trigger,
-        DetectorTrigger.variable_gate: Andor3TriggerMode.ext_exposure,
+        DetectorTrigger.INTERNAL: Andor3TriggerMode.INTERNAL,
+        DetectorTrigger.CONSTANT_GATE: Andor3TriggerMode.EXT_TRIGGER,
+        DetectorTrigger.VARIABLE_GATE: Andor3TriggerMode.EXT_EXPOSURE,
     }
 
     def __init__(
@@ -54,9 +54,11 @@ class Andor3Controller(DetectorControl):
         await asyncio.gather(
             self._drv.trigger_mode.set(self._get_trigger_mode(trigger_info.trigger)),
             self._drv.num_images.set(
-                999_999 if trigger_info.number == 0 else trigger_info.number
+                999_999
+                if trigger_info.total_number_of_triggers == 0
+                else trigger_info.total_number_of_triggers
             ),
-            self._drv.image_mode.set(ImageMode.fixed),
+            self._drv.image_mode.set(ImageMode.FIXED),
         )
 
     async def arm(self) -> None:

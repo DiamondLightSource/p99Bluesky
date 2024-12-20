@@ -11,7 +11,7 @@ def takeImg(
     det: Andor2Ad | Andor3Ad,
     exposure: float,
     n_img: int = 1,
-    det_trig: DetectorTrigger = DetectorTrigger.internal,
+    det_trig: DetectorTrigger = DetectorTrigger.INTERNAL,
 ) -> MsgGenerator:
     """
     Bare minimum to take an image using prepare plan with full detector control
@@ -20,7 +20,7 @@ def takeImg(
     grp = short_uid("prepare")
     deadtime: float = det.controller.get_deadtime(exposure)
     tigger_info = TriggerInfo(
-        number=n_img,
+        number_of_triggers=n_img,
         trigger=det_trig,
         deadtime=deadtime,
         livetime=exposure,

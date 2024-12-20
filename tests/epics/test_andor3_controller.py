@@ -26,14 +26,16 @@ async def Andor(RE) -> Andor3Controller:
 
 async def test_Andor3_controller(RE, Andor: Andor3Controller):
     with patch("ophyd_async.core.wait_for_value", return_value=None):
-        await Andor.prepare(trigger_info=TriggerInfo(number=1, livetime=0.002))
+        await Andor.prepare(
+            trigger_info=TriggerInfo(number_of_triggers=1, livetime=0.002)
+        )
         await Andor.arm()
 
     driver = Andor._drv
 
     assert await driver.num_images.get_value() == 1
-    assert await driver.image_mode.get_value() == ImageMode.fixed
-    assert await driver.trigger_mode.get_value() == Andor3TriggerMode.internal
+    assert await driver.image_mode.get_value() == ImageMode.FIXED
+    assert await driver.trigger_mode.get_value() == Andor3TriggerMode.INTERNAL
     assert await driver.acquire.get_value() is True
     assert await driver.acquire_time.get_value() == 0.002
     assert Andor.get_deadtime(2) == 2 + 0.1
@@ -42,6 +44,6 @@ async def test_Andor3_controller(RE, Andor: Andor3Controller):
     with patch("ophyd_async.core.wait_for_value", return_value=None):
         await Andor.disarm()
     with pytest.raises(ValueError):
-        Andor._get_trigger_mode(DetectorTrigger.edge_trigger)
+        Andor._get_trigger_mode(DetectorTrigger.EDGE_TRIGGER)
 
     assert await driver.acquire.get_value() is False

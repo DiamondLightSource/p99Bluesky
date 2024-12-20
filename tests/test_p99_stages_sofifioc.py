@@ -3,7 +3,8 @@ from collections import defaultdict
 
 from bluesky.plans import scan
 from bluesky.run_engine import RunEngine
-from ophyd_async.core import DeviceCollector, assert_emitted
+from ophyd_async.core import DeviceCollector
+from ophyd_async.testing import assert_emitted
 
 from p99_bluesky.devices.p99.sample_stage import (
     FilterMotor,
@@ -39,7 +40,7 @@ async def test_fake_p99(RE: RunEngine, xyz_motor) -> None:
         mock_sampleAngleStage.theta.set(2),
         mock_sampleAngleStage.pitch.set(3.1),
         mock_sampleAngleStage.roll.set(4),
-        mock_filter_wheel.user_setpoint.set(p99StageSelections.Cd25um),
+        mock_filter_wheel.user_setpoint.set(p99StageSelections.CD25UM),
     )
     await asyncio.sleep(A_BIT)
     result = asyncio.gather(
@@ -49,7 +50,7 @@ async def test_fake_p99(RE: RunEngine, xyz_motor) -> None:
         mock_filter_wheel.user_setpoint.get_value(),
     )
     await asyncio.wait_for(result, timeout=2)
-    assert result.result() == [2.0, 3.1, 4.0, p99StageSelections.Cd25um]
+    assert result.result() == [2.0, 3.1, 4.0, p99StageSelections.CD25UM]
 
     RE(
         scan(
