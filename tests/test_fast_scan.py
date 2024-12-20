@@ -20,7 +20,8 @@ A_BIT = 0.001
 
 @pytest.fixture
 def det():
-    return SynPeriodicSignal(name="rand", labels={"detectors"})
+    det = SynPeriodicSignal(name="rand", labels={"detectors"})
+    return det
 
 
 async def test_fast_scan_1d_fail_limit_check(
@@ -45,6 +46,7 @@ async def test_fast_scan_1d_fail_limit_check(
 
 async def test_fast_scan_1d_success(sim_motor: ThreeAxisStage, RE: RunEngine, det):
     docs = defaultdict(list)
+    det.start_simulation()
 
     def capture_emitted(name, doc):
         docs[name].append(doc)
@@ -74,7 +76,7 @@ async def test_fast_scan_1d_success_without_speed(
     def capture_emitted(name, doc):
         docs[name].append(doc)
 
-    RE(fast_scan_1d([det], sim_motor.x, 1, 5), capture_emitted)
+    RE(fast_scan_1d([sim_motor.y], sim_motor.x, 1, 5), capture_emitted)
 
     assert 2.78 == await sim_motor.x.velocity.get_value()
     assert 2 == get_mock_put(sim_motor.x.user_setpoint).call_count
@@ -87,7 +89,8 @@ async def test_fast_scan_1d_success_without_speed(
     ] == get_mock_put(sim_motor.x.velocity).call_args_list
 
     """Only 1 event as sim motor motor_done_move is set to true,
-      so only 1 loop is ran"""
+      so only 1 loop is ran"""  #
+    print(docs)
     assert_emitted(docs, start=1, descriptor=1, event=1, stop=1)
 
 

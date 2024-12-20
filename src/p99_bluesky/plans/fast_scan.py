@@ -229,9 +229,9 @@ def _fast_scan_1d(
         yield from bps.prepare(motor, fly_info, group=grp, wait=True)
         yield from bps.wait(group=grp)
         yield from bps.kickoff(motor, group=grp, wait=True)
-
-        done = yield from bps.complete(motor)
         LOGGER.info(f"flying motor =  {motor.name} at speed = {motor_speed}")
+        done = yield from bps.complete(motor)
+        yield from bps.trigger_and_read(dets + [motor])
         while not done.done:
             yield from bps.trigger_and_read(dets + [motor])
             yield from bps.checkpoint()
